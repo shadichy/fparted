@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:fparted/core/filesystem/fs.dart';
 import 'package:fparted/core/model/data_size.dart';
 import 'package:fparted/core/model/device.dart';
@@ -50,6 +52,31 @@ class Disk {
     // TODO:
     throw UnimplementedError();
   }
+
+  factory Disk.fromJSON(Map data) {
+    return Disk(
+      device: Device(data["device"]),
+      size: DataSize.fromString(data["size"]),
+      model: data["model"],
+      logicalSectorSize: data["logical_sector_size"],
+      phyicalSectorSize: data["phyical_sector_size"],
+      uuid: DeviceId.fromString(data["uuid"]),
+      maxPartition: data["max_partition"],
+      partitions:
+          data["partitions"] == null
+              ? []
+              : (data["partitions"] as Iterable<Map>)
+                  .map(Partition.fromJSON)
+                  .toList(),
+    );
+  }
+
+  static Future<List<Disk>> get all async =>
+      (await Parted.list).stdout
+          .toString()
+          .split("\n\n")
+          .map((s) => Disk.fromJSON(jsonDecode(s)))
+          .toList();
 }
 
 class OrphanPartion {
@@ -122,27 +149,8 @@ class Partition extends OrphanPartion {
     // You cannot delete Orphaned partitions (loop devices)
     throw UnimplementedError();
   }
-}
 
-class FileSystemData {
-  final FileSystem type;
-  final String name;
-  final DeviceId id;
-  final FileSystemSpace space;
-
-  const FileSystemData({
-    required this.type,
-    required this.name,
-    required this.id,
-    required this.space,
-  });
-}
-
-class FileSystemSpace {
-  final DataSize size;
-  final DataSize used;
-
-  const FileSystemSpace({required this.size, required this.used});
-
-  DataSize get free => size - used;
+  factory Partition.fromJSON(Map data) {
+    throw UnimplementedError();
+  }
 }

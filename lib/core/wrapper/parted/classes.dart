@@ -1,6 +1,5 @@
 import 'package:fparted/core/filesystem/fs.dart';
 
-
 enum DiskFlag { CYLINDER_ALIGNMENT, PMBR_BOOT }
 
 extension DiskFlagString on DiskFlag {
@@ -110,7 +109,6 @@ extension PartitionFlagString on PartitionFlag {
       strMap.entries.firstWhere((f) => f.value.index == index).key;
 }
 
-
 enum PartitionFileSystem {
   AFFS0,
   AFFS1,
@@ -157,6 +155,7 @@ enum PartitionFileSystem {
   UDF,
   XFS,
   LVM2,
+  ZFS,
 }
 
 extension PartitionFileSystemString on PartitionFileSystem {
@@ -229,4 +228,30 @@ extension PartitionFileSystemString on PartitionFileSystem {
   String get str {
     return strMap.entries.firstWhere((f) => f.value.index == index).key;
   }
+}
+
+extension PartedFilesystem on FileSystem {
+  PartitionFileSystem? get toParted => switch (this) {
+    FileSystem.affs => PartitionFileSystem.AFFS7,
+    FileSystem.apfs => PartitionFileSystem.APFS2,
+    FileSystem.bcachefs => PartitionFileSystem.BCACHEFS,
+    FileSystem.btrfs => PartitionFileSystem.BTRFS,
+    FileSystem.exfat => PartitionFileSystem.EXFAT,
+    FileSystem.ext2 => PartitionFileSystem.EXT2,
+    FileSystem.ext3 => PartitionFileSystem.EXT3,
+    FileSystem.ext4 => PartitionFileSystem.EXT4,
+    FileSystem.f2fs => PartitionFileSystem.F2FS,
+    FileSystem.fat12 => PartitionFileSystem.FAT16,
+    FileSystem.fat16 => PartitionFileSystem.FAT16,
+    FileSystem.fat32 => PartitionFileSystem.FAT32,
+    FileSystem.hfs => PartitionFileSystem.HFS,
+    FileSystem.hfs_plus => PartitionFileSystem.HFS_PLUS,
+    FileSystem.jfs => PartitionFileSystem.JFS,
+    FileSystem.ntfs => PartitionFileSystem.NTFS,
+    FileSystem.reiserfs => PartitionFileSystem.REISERFS,
+    FileSystem.xfs => PartitionFileSystem.XFS,
+    FileSystem.lvm2 => PartitionFileSystem.LVM2,
+    FileSystem.zfs => PartitionFileSystem.ZFS,
+    _ => null,
+  };
 }

@@ -38,6 +38,9 @@ android {
         }
     }
 }
+dependencies {
+    implementation("androidx.media3:media3-common-ktx:1.6.1")
+}
 
 flutter {
     source = "../.."

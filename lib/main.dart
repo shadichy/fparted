@@ -56,6 +56,30 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   int _counter = 0;
 
+  String text = "";
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    // SuBinary().init().then((_) {
+    //   deviceInit().then((_) {
+    //     print("#########################");
+    //     final cmd = Wrapper.runCmdSync(("ls", ["-lAsh", "/data/user/0/"]));
+    //     print(cmd.stdout);
+    //     print(cmd.stderr);
+    //     // PartedBinary().init().then((_){
+    //     //   Parted.list.then((c) {
+    //     //     setState(() {
+    //     //       text = c.stdout.toString();
+    //     //       print(text);
+    //     //     });
+    //     //   });
+    //     // });
+    //   });
+    // });
+  }
+
   void _incrementCounter() {
     setState(() {
       // This call to setState tells the Flutter framework that something has
@@ -104,6 +128,7 @@ class _MyHomePageState extends State<MyHomePage> {
           // wireframe for each widget.
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
+            Text(text),
             const Text('You have pushed the button this many times:'),
             Text(
               '$_counter',

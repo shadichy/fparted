@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:fparted/core/wrapper/base.dart';
 
 class SuBinary implements Package {
@@ -8,23 +10,19 @@ class SuBinary implements Package {
   late final String suBinary;
 
   @override
-  isAvailable() {
-    // Always required
-    return true;
-  }
+  // Always required
+  isAvailable() => true;
 
   @override
   init() async {
-    final su = await binaryExists("su");
-    if (su != null) {
-      suBinary = su;
-    } else {
+    suBinary = (await binaryExists("su")) ?? "/system/bin/su";
+    if (Process.runSync(suBinary, ["-c", ":"]).exitCode != 0) {
       throw Exception("Root required");
     }
   }
 
   @override
-  toCmd(List<String> arguments) => (
+  (String, List<String>) toCmd(List<String> arguments) => (
     suBinary,
     ["-c", argToArg(arguments)],
   );

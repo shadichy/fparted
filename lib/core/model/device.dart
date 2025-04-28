@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'package:fparted/core/wrapper/wrapper.dart';
 
 enum DeviceType {
   // ignore: constant_identifier_names
@@ -45,7 +45,7 @@ class Device {
           device;
     }
 
-    if (!File(path).existsSync()) {
+    if (!Wrapper.fileExistsSync(path)) {
       throw Exception("Device $device does not exist");
     }
   }
@@ -64,6 +64,7 @@ class _DeviceInit {
 
   Future<void> init() async {
     // read from Hive config
+    fallback = Device("/dev/block/ram0");
   }
 }
 

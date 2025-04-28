@@ -14,6 +14,10 @@ class Parted {
     return PartedPartitionOperation(disk: disk, partitionNumber: number);
   }
 
+  static Future<ProcessResult> get list async {
+    return Wrapper.runParted((fallbackDevice(), ["print", "all"]));
+  }
+
   Future<ProcessResult> flag(DiskFlag flag, bool enable) async {
     return Wrapper.runParted((
       disk.device,

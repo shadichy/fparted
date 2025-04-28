@@ -8,10 +8,8 @@ class PartedBinary implements Package {
   late final String partedBinary;
 
   @override
-  isAvailable() {
-    // Always required
-    return true;
-  }
+  // Always required
+  isAvailable() => true;
 
   @override
   init() async {
@@ -24,7 +22,7 @@ class PartedBinary implements Package {
   }
 
   @override
-  toCmd(List<String> arguments) => (
+  (String, List<String>) toCmd(List<String> arguments) => (
     partedBinary,
     [arguments[0], "--json", argToArg(arguments.skip(1))],
   );
