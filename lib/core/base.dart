@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:fparted/core/filesystem/fs.dart';
 import 'package:fparted/core/model/data_size.dart';
@@ -48,9 +49,8 @@ class Disk {
     throw UnimplementedError();
   }
 
-  Future<void> createTable(PartitionTable table) async {
-    // TODO:
-    throw UnimplementedError();
+  Future<ProcessResult> createTable(PartitionTable table) async {
+    return await parted.createTable(table);
   }
 
   factory Disk.fromJSON(Map data) {
@@ -152,5 +152,8 @@ class Partition extends OrphanPartion {
 
   factory Partition.fromJSON(Map data) {
     throw UnimplementedError();
+    // data from parted
+    // data from blkid
+    // data from filesystem-specific
   }
 }

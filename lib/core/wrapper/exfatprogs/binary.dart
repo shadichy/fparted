@@ -1,34 +1,30 @@
 import 'package:fparted/core/wrapper/base.dart';
 
-class ExfatprogsBinary implements FilesystemPackage {
+class ExfatprogsBinary extends FilesystemPackage {
   ExfatprogsBinary._i();
   static final ExfatprogsBinary _ = ExfatprogsBinary._i();
   factory ExfatprogsBinary() => _;
 
-  late final String? binary;
+  @override
+  get binaries => ["mkfs.exfat", "dump.exfat", "exfatlabel", "fsck.exfat"];
 
   @override
-  isAvailable() => binary != null;
+  create(device, [_, label]) => (
+    "mkfs.exfat",
+    [
+      ...(label != null ? ["-L", label] : []),
+      device.raw,
+    ],
+  );
 
   @override
-  init() async {
-    binary = await binaryExists("mkfs.exfat");
-    if (binary == null) {
-      print(Exception("dosfstools is missing"));
-    }
-  }
-
-  @override
-  toCmd(_) => null;
-
-  @override
-  create(device, [_]) => ("mkfs.vfat", [device.raw]);
+  dump(device, [_]) => ("dump.exfat", [device.raw]);
 
   @override
   label(device, label, [_]) => ("exfatlabel", [device.raw, label]);
 
   @override
-  fix(device, [_]) => ("fsck.exfat", [device.raw]);
+  repair(device, [_]) => ("fsck.exfat", [device.raw]);
 
   @override
   // exfat has no ability to resize

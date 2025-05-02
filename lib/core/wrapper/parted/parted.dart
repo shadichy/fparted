@@ -10,12 +10,16 @@ class Parted {
   final Disk disk;
   const Parted(this.disk);
 
-  Future<PartedPartitionOperation> partition(int number) async {
+  PartedPartitionOperation partition(int number) {
     return PartedPartitionOperation(disk: disk, partitionNumber: number);
   }
 
   static Future<ProcessResult> get list async {
     return Wrapper.runParted((fallbackDevice(), ["print", "all"]));
+  }
+
+  static ProcessResult get listSync {
+    return Wrapper.runPartedSync((fallbackDevice(), ["print", "all"]));
   }
 
   Future<ProcessResult> flag(DiskFlag flag, bool enable) async {
@@ -25,8 +29,19 @@ class Parted {
     ));
   }
 
+  ProcessResult flagSync(DiskFlag flag, bool enable) {
+    return Wrapper.runPartedSync((
+      disk.device,
+      ["disk_set", enable ? "on" : "off"],
+    ));
+  }
+
   Future<ProcessResult> createTable(PartitionTable table) async {
     return Wrapper.runParted((disk.device, ["mklabel", table.str]));
+  }
+
+  ProcessResult createTableSync(PartitionTable table) {
+    return Wrapper.runPartedSync((disk.device, ["mklabel", table.str]));
   }
 
   Future<ProcessResult> createPart(
@@ -34,7 +49,23 @@ class Parted {
     DataSize end,
     PartitionType type, [
     PartitionFileSystem? filesystem,
-  ]) => Wrapper.runParted((
+  ]) async => Wrapper.runParted((
+    disk.device,
+    [
+      "mkpart",
+      type.str,
+      ...(filesystem == null ? [] : [filesystem.str]),
+      start.byte.toStringAsFixed(2),
+      end.byte.toStringAsFixed(2),
+    ],
+  ));
+  
+  ProcessResult createPartSync(
+    DataSize start,
+    DataSize end,
+    PartitionType type, [
+    PartitionFileSystem? filesystem,
+  ]) => Wrapper.runPartedSync((
     disk.device,
     [
       "mkpart",

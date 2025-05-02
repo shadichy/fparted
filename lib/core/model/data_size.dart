@@ -3,7 +3,11 @@ class DataSize {
   static final ratio = 1024;
   static final ratioSI = 1000;
 
-  DataSize(BigInt byte) : byte = byte.toSigned(64).toInt();
+  static final zero = DataSize._init(0);
+  static final max = DataSize._init(-1);
+
+  DataSize._init(this.byte);
+  factory DataSize(BigInt byte) => DataSize._init(byte.toSigned(64).toInt());
   factory DataSize.B(BigInt b) => DataSize(b);
   factory DataSize.kiB(BigInt kiB) => DataSize.B(kiB * BigInt.from(ratio));
   factory DataSize.miB(BigInt miB) => DataSize.kiB(miB * BigInt.from(ratio));
@@ -17,6 +21,10 @@ class DataSize {
   factory DataSize.tB(BigInt tb) => DataSize.gB(tb * BigInt.from(ratioSI));
   factory DataSize.pB(BigInt pb) => DataSize.tB(pb * BigInt.from(ratioSI));
   factory DataSize.eB(BigInt eb) => DataSize.pB(eb * BigInt.from(ratioSI));
+  factory DataSize.fromBlock(BigInt blockCount, DataSize blockSize) =>
+      DataSize(blockCount * blockSize.inB);
+  factory DataSize.parse(String source, {int? radix}) =>
+      DataSize(BigInt.parse(source));
   factory DataSize.fromString(String string) {
     final String lowerCase = string.toLowerCase();
     if (lowerCase.endsWith("ib")) {

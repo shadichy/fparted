@@ -1,34 +1,33 @@
 import 'package:fparted/core/wrapper/base.dart';
 
-class BtrfsprogsBinary implements FilesystemPackage {
+class BtrfsprogsBinary extends FilesystemPackage {
   BtrfsprogsBinary._i();
   static final BtrfsprogsBinary _ = BtrfsprogsBinary._i();
   factory BtrfsprogsBinary() => _;
 
-  late final String? binary;
+  @override
+  get binaries => ["mkfs.btrfs", "btrfs"];
 
   @override
-  isAvailable() => binary != null;
+  create(device, [_, label]) => (
+    "mkfs.btrfs",
+    [
+      ...(label != null ? ["-L", label] : []),
+      device.raw,
+    ],
+  );
 
   @override
-  init() async {
-    binary = await binaryExists("btrfs");
-    if (binary == null) {
-      print(Exception("btrfs-progs is missing"));
-    }
-  }
+  dump(device, [_]) => ("btrfs", ["filesystem", "show", "--raw", device.raw]);
 
   @override
-  toCmd(_) => null;
+  label(device, label, [_]) => (
+    "btrfs",
+    ["filesystem", "label", device.raw, label],
+  );
 
   @override
-  create(device, [_]) => ("mkfs.btrfs", [device.raw]);
-
-  @override
-  label(device, label, [_]) => ("btrfs", ["filesystem", "label", device.raw, label]);
-
-  @override
-  fix(device, [_]) => ("fsck.exfat", [device.raw]);
+  repair(device, [_]) => ("btrfs", ["check", device.raw]);
 
   @override
   resize(device, size, [_, _]) => (

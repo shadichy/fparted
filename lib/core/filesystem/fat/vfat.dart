@@ -1,122 +1,152 @@
-import 'package:fparted/core/filesystem/base.dart';
+import 'package:fparted/core/filesystem/fs.dart';
+import 'package:fparted/core/model/data_size.dart';
+import 'package:fparted/core/model/device.dart';
 import 'package:fparted/core/wrapper/dosfstools/binary.dart';
 import 'package:fparted/core/wrapper/wrapper.dart';
 
-abstract class DosFSProp extends FileSystemProp {
-  DosFSVariants get variant;
-
-  @override
-  canGrow() => true;
-
-  @override
-  canShink() => true;
-
-  @override
-  create(device) async {
-    return await Wrapper.runCmd(DosfstoolsBinary().create(device, variant));
-  }
-
-  @override
-  createSync(device) {
-    return Wrapper.runCmdSync(DosfstoolsBinary().create(device, variant));
-  }
-
-  @override
-  label(device, label) async {
-    return await Wrapper.runCmd(
-      DosfstoolsBinary().label(device, label, variant),
+class _DosData extends FileSystemData {
+  const _DosData({
+    required super.partition,
+    required super.type,
+    required super.name,
+    required super.id,
+    required super.blockSize,
+    required super.space,
+    required this.variant,
+  });
+  factory _DosData._blkid(
+    partition, [
+    DosFSVariants variant = DosFSVariants.fat32,
+    Map partedOutput = const {},
+  ]) {
+    final blkidData = FileSystemData.fromPartition(partition, partedOutput);
+    final dumpData = Wrapper.runCmdSync(
+      DosfstoolsBinary().dump(partition),
+    ).stdout.toString().split("\n").last.split("/");
+    final blockSize = DataSize(BigInt.from(4096));
+    return _DosData(
+      partition: partition,
+      type: blkidData.type,
+      name: blkidData.name,
+      id: blkidData.id,
+      blockSize: blockSize,
+      space: FileSystemSpace.size_used(
+        size: DataSize.fromBlock(
+          BigInt.parse(dumpData.last.split(" ").first),
+          blockSize,
+        ),
+        used: DataSize.fromBlock(
+          BigInt.parse(dumpData.first.split(" ").last),
+          blockSize,
+        ),
+      ),
+      variant: DosFSVariants.fat32,
     );
   }
 
+  final DosFSVariants variant;
+
   @override
-  labelSync(device, label) {
-    return Wrapper.runCmdSync(DosfstoolsBinary().label(device, label, variant));
+  get canGrow => false;
+
+  @override
+  get canShink => false;
+
+  @override
+  label(label) async {
+    return await Wrapper.runCmd(DosfstoolsBinary().label(partition, label));
   }
 
   @override
-  repair(device) async {
-    return await Wrapper.runCmd(DosfstoolsBinary().fix(device, variant));
+  labelSync(label) {
+    return Wrapper.runCmdSync(DosfstoolsBinary().label(partition, label));
   }
 
   @override
-  repairSync(device) {
-    return Wrapper.runCmdSync(DosfstoolsBinary().fix(device, variant));
+  repair() async {
+    return await Wrapper.runCmd(DosfstoolsBinary().repair(partition));
   }
 
   @override
-  resize(device, size) async {
-    final cmd = DosfstoolsBinary().resize(device, size, variant);
-    if (cmd != null) return await Wrapper.runCmd(cmd);
-    throw Exception("Cant resize filesystem");
+  repairSync() {
+    return Wrapper.runCmdSync(DosfstoolsBinary().repair(partition));
   }
 
   @override
-  resizeSync(device, size) {
-    final cmd = DosfstoolsBinary().resize(device, size, variant);
-    if (cmd != null) return Wrapper.runCmdSync(cmd);
-    throw Exception("Cant resize filesystem");
-  }
+  get toolChainAvailable => DosfstoolsBinary().isAvailable;
+}
 
-  @override
-  toolChainAvailable() => DosfstoolsBinary().isAvailable();
+final class Fat12 extends _DosData {
+  static final _variant = DosFSVariants.fat12;
 
-  @override
-  blockSize(device) {
-    // TODO: implement blockSize
-    throw UnimplementedError();
-  }
+  Fat12._init({
+    required super.partition,
+    required super.type,
+    required super.name,
+    required super.id,
+    required super.space,
+    required super.blockSize,
+  }) : super(variant: _variant);
 
-  @override
-  getId(device) {
-    // TODO: implement getId
-    throw UnimplementedError();
-  }
-
-  @override
-  getName(device) {
-    // TODO: implement getName
-    return super.getName(device);
-  }
-
-  @override
-  getSpace(device) {
-    // TODO: implement getSpace
-    return super.getSpace(device);
+  factory Fat12(Device partition, [Map partedOutput = const {}]) {
+    final data = _DosData._blkid(partition, _variant, partedOutput);
+    return Fat12._init(
+      partition: partition,
+      type: data.type,
+      name: data.name,
+      id: data.id,
+      space: data.space,
+      blockSize: data.blockSize,
+    );
   }
 }
 
-final class Msdos extends DosFSProp {
-  static final Msdos _i = Msdos._();
-  Msdos._();
-  factory Msdos() => _i;
+final class Fat16 extends _DosData {
+  static final _variant = DosFSVariants.fat16;
 
-  @override
-  get variant => DosFSVariants.dos;
+  Fat16._init({
+    required super.partition,
+    required super.type,
+    required super.name,
+    required super.id,
+    required super.space,
+    required super.blockSize,
+  }) : super(variant: _variant);
+
+  factory Fat16(Device partition, [Map partedOutput = const {}]) {
+    final data = _DosData._blkid(partition, _variant, partedOutput);
+    return Fat16._init(
+      partition: partition,
+      type: data.type,
+      name: data.name,
+      id: data.id,
+      space: data.space,
+      blockSize: data.blockSize,
+    );
+  }
 }
 
-final class Fat12 extends DosFSProp {
-  static final Fat12 _i = Fat12._();
-  Fat12._();
-  factory Fat12() => _i;
+final class Fat32 extends _DosData {
+  static final _variant = DosFSVariants.fat32;
 
-  @override
-  get variant => DosFSVariants.fat12;
-}
+  Fat32._init({
+    required super.partition,
+    required super.type,
+    required super.name,
+    required super.id,
+    required super.space,
+    required super.blockSize,
+  }) : super(variant: _variant);
 
-final class Fat16 extends DosFSProp {
-  static final Fat16 _i = Fat16._();
-  Fat16._();
-  factory Fat16() => _i;
-
-  @override
-  get variant => DosFSVariants.fat16;
-}
-
-final class Fat32 extends DosFSProp {
-  static final Fat32 _i = Fat32._();
-  Fat32._();
-  factory Fat32() => _i;
-
-  @override
-  get variant => DosFSVariants.fat32;
+  factory Fat32(Device partition, [Map partedOutput = const {}]) {
+    final data = _DosData._blkid(partition, _variant, partedOutput);
+    return Fat32._init(
+      partition: partition,
+      type: data.type,
+      name: data.name,
+      id: data.id,
+      space: data.space,
+      blockSize: data.blockSize,
+    );
+  }
 }

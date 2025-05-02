@@ -1,101 +1,91 @@
-import 'package:fparted/core/filesystem/base.dart';
+import 'package:fparted/core/filesystem/fs.dart';
+import 'package:fparted/core/model/data_size.dart';
+import 'package:fparted/core/model/device.dart';
 import 'package:fparted/core/wrapper/btrfs-progs/binary.dart';
 import 'package:fparted/core/wrapper/wrapper.dart';
 
-final class BtrFS extends FileSystemProp {
-  static final BtrFS _i = BtrFS._();
-  BtrFS._();
-  factory BtrFS() => _i;
+final class BtrFS extends FileSystemData {
+  const BtrFS._init({
+    required super.partition,
+    required super.type,
+    required super.name,
+    required super.id,
+    required super.blockSize,
+    required super.space,
+  });
+  factory BtrFS(Device partition, [Map partedOutput = const {}]) {
+    final blkidData = FileSystemData.fromPartition(partition, partedOutput);
+    final dumpData = Wrapper.runCmdSync(
+      BtrfsprogsBinary().dump(partition),
+    ).stdout.toString().split("\n").last.split(" size ").last.split(" used ");
+    return BtrFS._init(
+      partition: partition,
+      type: blkidData.type,
+      name: blkidData.name,
+      id: blkidData.id,
+      blockSize: blkidData.blockSize,
+      space: FileSystemSpace.size_used(
+        size: DataSize.parse(dumpData.first),
+        used: DataSize.parse(dumpData.last.split(" ").first),
+      ),
+    );
+  }
 
   @override
-  canGrow() => true;
+  get canGrow => true;
 
   @override
-  canShink() => true;
+  get canShink => true;
 
   @override
-  check(device) async {
-    final binary = BtrfsprogsBinary().binary;
+  check() async {
+    final binary = BtrfsprogsBinary().binaryMap["btrfs"];
     if (binary == null) throw Exception("btrfs toolchain does not exist");
-    return await Wrapper.runCmd((binary, ["check", device.raw]));
+    return await Wrapper.runCmd((binary, ["check", partition.raw]));
   }
 
   @override
-  checkSync(device) {
-    final binary = BtrfsprogsBinary().binary;
+  checkSync() {
+    final binary = BtrfsprogsBinary().binaryMap["btrfs"];
     if (binary == null) throw Exception("btrfs toolchain does not exist");
-    return Wrapper.runCmdSync((binary, ["check", device.raw]));
+    return Wrapper.runCmdSync((binary, ["check", partition.raw]));
   }
 
   @override
-  create(device) async {
-    return await Wrapper.runCmd(BtrfsprogsBinary().create(device));
+  label(label) async {
+    return await Wrapper.runCmd(BtrfsprogsBinary().label(partition, label));
   }
 
   @override
-  createSync(device) {
-    return Wrapper.runCmdSync(BtrfsprogsBinary().create(device));
+  labelSync(label) {
+    return Wrapper.runCmdSync(BtrfsprogsBinary().label(partition, label));
   }
 
   @override
-  label(device, label) async {
-    return await Wrapper.runCmd(BtrfsprogsBinary().label(device, label));
-  }
-
-  @override
-  labelSync(device, label) {
-    return Wrapper.runCmdSync(BtrfsprogsBinary().label(device, label));
-  }
-
-  @override
-  repair(device) async {
-    return await Wrapper.runCmd(BtrfsprogsBinary().fix(device));
+  repair() async {
+    return await Wrapper.runCmd(BtrfsprogsBinary().repair(partition));
     // more procedure
   }
 
   @override
-  repairSync(device) {
-    return Wrapper.runCmdSync(BtrfsprogsBinary().fix(device));
+  repairSync() {
+    return Wrapper.runCmdSync(BtrfsprogsBinary().repair(partition));
   }
 
   @override
-  resize(device, size) async {
-    final cmd = BtrfsprogsBinary().resize(device, size);
+  resize(size) async {
+    final cmd = BtrfsprogsBinary().resize(partition, size);
     if (cmd != null) return await Wrapper.runCmd(cmd);
     throw Exception("Cant resize filesystem");
   }
 
   @override
-  resizeSync(device, size) {
-    final cmd = BtrfsprogsBinary().resize(device, size);
+  resizeSync(size) {
+    final cmd = BtrfsprogsBinary().resize(partition, size);
     if (cmd != null) return Wrapper.runCmdSync(cmd);
     throw Exception("Cant resize filesystem");
   }
 
   @override
-  toolChainAvailable() => BtrfsprogsBinary().isAvailable();
-  
-  @override
-  blockSize(device) {
-    // TODO: implement blockSize
-    throw UnimplementedError();
-  }
-  
-  @override
-  getId(device) {
-    // TODO: implement getId
-    throw UnimplementedError();
-  }
-
-  @override
-  getName(device) {
-    // TODO: implement getName
-    return super.getName(device);
-  }
-
-  @override
-  getSpace(device) {
-    // TODO: implement getSpace
-    return super.getSpace(device);
-  }
+  get toolChainAvailable => BtrfsprogsBinary().isAvailable;
 }

@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:fparted/core/model/device.dart';
+import 'package:fparted/core/wrapper/blkid/binary.dart';
 import 'package:fparted/core/wrapper/btrfs-progs/binary.dart';
 import 'package:fparted/core/wrapper/dosfstools/binary.dart';
 import 'package:fparted/core/wrapper/e2fsprogs/binary.dart';
@@ -42,6 +43,18 @@ abstract final class Wrapper {
     (Device device, List<String> arguments) cmd,
   ) {
     return runCmdSync(PartedBinary().toCmd([cmd.$1.raw, ...cmd.$2]));
+  }
+
+  static Future<ProcessResult> runBlkid(
+    (Device device, List<String> arguments) cmd,
+  ) async {
+    return runCmd(BlkidBinary().toCmd([cmd.$1.raw, ...cmd.$2]));
+  }
+
+  static ProcessResult runBlkidSync(
+    (Device device, List<String> arguments) cmd,
+  ) {
+    return runCmdSync(BlkidBinary().toCmd([cmd.$1.raw, ...cmd.$2]));
   }
 
   static Future<void> init() async {

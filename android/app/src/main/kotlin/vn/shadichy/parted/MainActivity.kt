@@ -1,4 +1,4 @@
-package com.example.fparted
+package vn.shadichy.parted
 
 import android.os.Bundle
 import io.flutter.embedding.android.FlutterActivity

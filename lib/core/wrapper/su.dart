@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:fparted/core/wrapper/base.dart';
 
-class SuBinary implements Package {
+class SuBinary implements RequiredPackage {
   SuBinary._i();
   static final SuBinary _ = SuBinary._i();
   factory SuBinary() => _;
@@ -11,19 +11,31 @@ class SuBinary implements Package {
 
   @override
   // Always required
-  isAvailable() => true;
+  get isAvailable => true;
 
   @override
   init() async {
-    suBinary = (await binaryExists("su")) ?? "/system/bin/su";
-    if (Process.runSync(suBinary, ["-c", ":"]).exitCode != 0) {
-      throw Exception("Root required");
+    if (Platform.isAndroid) {
+      suBinary = (await binaryExists("su")) ?? "/system/bin/su";
+      if (Process.runSync(suBinary, ["-c", ":"]).exitCode != 0) {
+        throw Exception("Root required");
+      }
+    } else if (Platform.isLinux) {
+      suBinary = "su";
+    } else {
+      throw Exception("Unsupported platform");
     }
   }
 
   @override
-  (String, List<String>) toCmd(List<String> arguments) => (
-    suBinary,
-    ["-c", argToArg(arguments)],
-  );
+  (String, List<String>) toCmd(List<String> arguments) {
+    final args = argToArg(arguments);
+    if (Platform.isAndroid) {
+      return (suBinary, ["-c", args]);
+    } else if (Platform.isLinux) {
+      return ("pkexec", ["su", "-c", args]);
+    } else {
+      throw Exception("Unsupported platform");
+    }
+  }
 }

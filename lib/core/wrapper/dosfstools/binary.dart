@@ -1,60 +1,38 @@
 import 'package:fparted/core/wrapper/base.dart';
 
-enum DosFSVariants { dos, fat12, fat16, fat32 }
+enum DosFSVariants { fat12, fat16, fat32 }
 
-class DosfstoolsBinary implements FilesystemPackage<DosFSVariants> {
+class DosfstoolsBinary extends FilesystemPackage<DosFSVariants> {
   DosfstoolsBinary._i();
   static final DosfstoolsBinary _ = DosfstoolsBinary._i();
   factory DosfstoolsBinary() => _;
 
-  late final String? binary;
+  @override
+  get binaries => ["fatlabel", "fsck.fat", "mkfs.fat"];
 
   @override
-  isAvailable() => binary != null;
+  create(device, [variant, label]) => (
+    "mkfs.fat",
+    [
+      "-F",
+      switch (variant) {
+        DosFSVariants.fat12 => "12",
+        DosFSVariants.fat16 => "16",
+        _ => "32",
+      },
+      ...(label != null ? ["-n", label] : []),
+      device.raw,
+    ],
+  );
 
   @override
-  init() async {
-    binary = await binaryExists("mkfs.vfat");
-    if (binary == null) {
-      print(Exception("dosfstools is missing"));
-    }
-  }
+  dump(device, [_]) => ("fsck.fat", ["-n", device.raw]);
 
   @override
-  toCmd(_) => null;
+  label(device, label, [_]) => ("fatlabel", [device.raw, label]);
 
   @override
-  create(device, [variant]) {
-    final (String eVariant, List<String> eArguments) = switch (variant) {
-      DosFSVariants.dos => ("msdos", []),
-      DosFSVariants.fat12 => ("vfat", ["-F", "12"]),
-      DosFSVariants.fat16 => ("vfat", ["-F", "16"]),
-      _ => ("vfat", ["-F", "32"]),
-    };
-    return ("mkfs.$eVariant", [...eArguments, device.raw]);
-  }
-
-  @override
-  label(device, label, [variant]) {
-    return (
-      "${switch (variant) {
-        DosFSVariants.dos => "dosfs",
-        _ => "fat",
-      }}label",
-      [device.raw, label],
-    );
-  }
-
-  @override
-  fix(device, [variant]) {
-    return (
-      "fsck.${switch (variant) {
-        DosFSVariants.dos => "msdos",
-        _ => "vfat",
-      }}",
-      [device.raw],
-    );
-  }
+  repair(device, [_]) => ("fsck.fat", ["-a", device.raw]);
 
   @override
   // dosfstools has no ability to resize

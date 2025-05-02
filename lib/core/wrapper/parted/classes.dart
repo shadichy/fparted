@@ -212,7 +212,7 @@ extension PartitionFileSystemString on PartitionFileSystem {
   }
 
   static PartitionFileSystem fromFileSysytem(FileSystem fs) {
-    String fsType = fs.str;
+    String fsType = fs.name;
     if (!strMap.keys.contains(fsType)) {
       switch (fsType) {
         case "swap":

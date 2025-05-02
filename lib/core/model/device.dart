@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:fparted/core/wrapper/wrapper.dart';
 
 enum DeviceType {
@@ -64,7 +66,13 @@ class _DeviceInit {
 
   Future<void> init() async {
     // read from Hive config
-    fallback = Device("/dev/block/ram0");
+    if (Platform.isAndroid) {
+      fallback = Device("/dev/block/ram0");
+    } else if (Platform.isLinux) {
+      fallback = Device("/dev/zram0");
+    } else {
+      throw Exception("Unsupported platform");
+    }
   }
 }
 
@@ -128,18 +136,26 @@ class DeviceId {
 
   String get type => _type.name;
 
-  String toNumber() {
-    // TODO: implement toString
-    return super.toString();
-  }
-
   String toID() {
-    // TODO: implement toString
-    return super.toString();
+    return id.toRadixString(16);
   }
 
   String toUUID() {
     // TODO: implement toString
     return super.toString();
   }
+
+  @override
+  String toString() => switch (_type) {
+    _DeviceIdType.ID => toID(),
+    _DeviceIdType.UUID => toUUID(),
+  };
+
+  @override
+  bool operator ==(Object other) {
+    return other is DeviceId && id == other.id;
+  }
+
+  @override
+  int get hashCode => id.hashCode;
 }

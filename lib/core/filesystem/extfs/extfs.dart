@@ -1,111 +1,166 @@
-import 'package:fparted/core/filesystem/base.dart';
+import 'package:fparted/core/filesystem/fs.dart';
+import 'package:fparted/core/model/data_size.dart';
+import 'package:fparted/core/model/device.dart';
 import 'package:fparted/core/wrapper/e2fsprogs/binary.dart';
 import 'package:fparted/core/wrapper/wrapper.dart';
 
-abstract class ExtFSProp extends FileSystemProp {
-  E2FSVariants get variant;
+class _E2Data extends FileSystemData {
+  const _E2Data({
+    required super.partition,
+    required super.type,
+    required super.name,
+    required super.id,
+    required super.blockSize,
+    required super.space,
+    required this.variant,
+  });
+  factory _E2Data._blkid(
+    partition, [
+    E2FSVariants variant = E2FSVariants.ext4,
+    Map partedOutput = const {},
+  ]) {
+    final blkidData = FileSystemData.fromPartition(partition, partedOutput);
+    final dumpRegex = RegExp(r"^(Block (size|count)|Free blocks)");
+    final dumpData = Wrapper.runCmdSync(E2fsprogsBinary().dump(partition))
+        .stdout
+        .toString()
+        .split("\n")
+        .where((l) => dumpRegex.hasMatch(l))
+        .map((l) => l.split(":"))
+        .map((l) => (l.first, BigInt.parse(l.last.trim())));
+    BigInt getData(String str) => dumpData.firstWhere((l) => l.$1 == str).$2;
+    final blockSize = DataSize(getData("Block size"));
+    return _E2Data(
+      partition: partition,
+      type: blkidData.type,
+      name: blkidData.name,
+      id: blkidData.id,
+      blockSize: blockSize,
+      space: FileSystemSpace.size_used(
+        size: DataSize.fromBlock(getData("Block count"), blockSize),
+        used: DataSize.fromBlock(getData("Free blocks"), blockSize),
+      ),
+      variant: E2FSVariants.ext4,
+    );
+  }
+
+  final E2FSVariants variant;
 
   @override
-  canGrow() => true;
+  get canGrow => true;
 
   @override
-  canShink() => true;
+  get canShink => true;
 
   @override
-  create(device) async {
-    return await Wrapper.runCmd(E2fsprogsBinary().create(device, variant));
+  label(label) async {
+    return await Wrapper.runCmd(E2fsprogsBinary().label(partition, label));
   }
 
   @override
-  createSync(device) {
-    return Wrapper.runCmdSync(E2fsprogsBinary().create(device, variant));
+  labelSync(label) {
+    return Wrapper.runCmdSync(E2fsprogsBinary().label(partition, label));
   }
 
   @override
-  label(device, label) async {
-    return await Wrapper.runCmd(E2fsprogsBinary().label(device, label));
+  repair() async {
+    return await Wrapper.runCmd(E2fsprogsBinary().repair(partition));
   }
 
   @override
-  labelSync(device, label) {
-    return Wrapper.runCmdSync(E2fsprogsBinary().label(device, label));
+  repairSync() {
+    return Wrapper.runCmdSync(E2fsprogsBinary().repair(partition));
   }
 
   @override
-  repair(device) async {
-    return await Wrapper.runCmd(E2fsprogsBinary().fix(device));
-  }
-
-  @override
-  repairSync(device) {
-    return Wrapper.runCmdSync(E2fsprogsBinary().fix(device));
-  }
-
-  @override
-  resize(device, size) async {
-    final cmd = E2fsprogsBinary().resize(device, size);
+  resize(size) async {
+    final cmd = E2fsprogsBinary().resize(partition, size);
     if (cmd != null) return await Wrapper.runCmd(cmd);
     throw Exception("Cant resize filesystem");
   }
 
   @override
-  resizeSync(device, size) {
-    final cmd = E2fsprogsBinary().resize(device, size);
+  resizeSync(size) {
+    final cmd = E2fsprogsBinary().resize(partition, size);
     if (cmd != null) return Wrapper.runCmdSync(cmd);
     throw Exception("Cant resize filesystem");
   }
 
   @override
-  toolChainAvailable() => E2fsprogsBinary().isAvailable();
-  
-  @override
-  blockSize(device) {
-    // TODO: implement blockSize
-    throw UnimplementedError();
-  }
+  get toolChainAvailable => E2fsprogsBinary().isAvailable;
+}
 
-  @override
-  getId(device) {
-    // TODO: implement getId
-    throw UnimplementedError();
-  }
+final class Ext2 extends _E2Data {
+  static final _variant = E2FSVariants.ext2;
 
-  @override
-  getName(device) {
-    // TODO: implement getName
-    return super.getName(device);
-  }
+  Ext2._init({
+    required super.partition,
+    required super.type,
+    required super.name,
+    required super.id,
+    required super.space,
+    required super.blockSize,
+  }) : super(variant: _variant);
 
-  @override
-  getSpace(device) {
-    // TODO: implement getSpace
-    return super.getSpace(device);
+  factory Ext2(Device partition, [Map partedOutput = const {}]) {
+    final data = _E2Data._blkid(partition, _variant, partedOutput);
+    return Ext2._init(
+      partition: partition,
+      type: data.type,
+      name: data.name,
+      id: data.id,
+      space: data.space,
+      blockSize: data.blockSize,
+    );
   }
 }
 
-final class Ext2 extends ExtFSProp {
-  static final Ext2 _i = Ext2._();
-  Ext2._();
-  factory Ext2() => _i;
+final class Ext3 extends _E2Data {
+  static final _variant = E2FSVariants.ext3;
 
-  @override
-  get variant => E2FSVariants.ext2;
+  Ext3._init({
+    required super.partition,
+    required super.type,
+    required super.name,
+    required super.id,
+    required super.space,
+    required super.blockSize,
+  }) : super(variant: _variant);
+
+  factory Ext3(Device partition, [Map partedOutput = const {}]) {
+    final data = _E2Data._blkid(partition, _variant, partedOutput);
+    return Ext3._init(
+      partition: partition,
+      type: data.type,
+      name: data.name,
+      id: data.id,
+      space: data.space,
+      blockSize: data.blockSize,
+    );
+  }
 }
 
-final class Ext3 extends ExtFSProp {
-  static final Ext3 _i = Ext3._();
-  Ext3._();
-  factory Ext3() => _i;
+final class Ext4 extends _E2Data {
+  static final _variant = E2FSVariants.ext4;
 
-  @override
-  get variant => E2FSVariants.ext3;
-}
+  Ext4._init({
+    required super.partition,
+    required super.type,
+    required super.name,
+    required super.id,
+    required super.space,
+    required super.blockSize,
+  }) : super(variant: _variant);
 
-final class Ext4 extends ExtFSProp {
-  static final Ext4 _i = Ext4._();
-  Ext4._();
-  factory Ext4() => _i;
-
-  @override
-  get variant => E2FSVariants.ext4;
+  factory Ext4(Device partition, [Map partedOutput = const {}]) {
+    final data = _E2Data._blkid(partition, _variant, partedOutput);
+    return Ext4._init(
+      partition: partition,
+      type: data.type,
+      name: data.name,
+      id: data.id,
+      space: data.space,
+      blockSize: data.blockSize,
+    );
+  }
 }

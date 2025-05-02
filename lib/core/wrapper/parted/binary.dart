@@ -1,6 +1,6 @@
 import 'package:fparted/core/wrapper/base.dart';
 
-class PartedBinary implements Package {
+class PartedBinary implements RequiredPackage {
   PartedBinary._i();
   static final PartedBinary _ = PartedBinary._i();
   factory PartedBinary() => _;
@@ -9,7 +9,7 @@ class PartedBinary implements Package {
 
   @override
   // Always required
-  isAvailable() => true;
+  get isAvailable => true;
 
   @override
   init() async {
