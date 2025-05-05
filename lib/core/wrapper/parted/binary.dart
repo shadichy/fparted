@@ -24,6 +24,6 @@ class PartedBinary implements RequiredPackage {
   @override
   (String, List<String>) toCmd(List<String> arguments) => (
     partedBinary,
-    [arguments[0], "--json", argToArg(arguments.skip(1))],
+    [arguments[0], "-j", "-s", "unit", "b", argToArg(arguments.skip(1))],
   );
 }

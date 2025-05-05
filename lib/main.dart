@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:fparted/core/base.dart';
 
 import 'core/wrapper/parted/parted.dart';
 import 'core/wrapper/wrapper.dart';
@@ -65,19 +66,24 @@ class _MyHomePageState extends State<MyHomePage> {
   void initState() {
     // TODO: implement initState
     super.initState();
-    // Wrapper.init().then((_) {
-    //   print("#########################");
-    //   final cmd = Wrapper.runCmdSync(("/data/data/vn.shadichy.parted/files/usr/bin/parted", ["/dev/block/ram0", "-l"]));
-    //   // final cmd = Wrapper.runCmdSync(("ls", ["/data/data/vn.shadichy.parted/files/usr/lib"]));
-    //   print(cmd.stdout);
-    //   print(cmd.stderr);
-    //   Parted.list.then((c) {
-    //     setState(() {
-    //       text = c.stdout.toString();
-    //       print(text);
-    //     });
-    //   });
-    // });
+    Wrapper.init().then((_) {
+      print("#########################");
+      final all = Disk.allSync;
+      setState(() {
+        text = all.toString();
+      });
+      print(all);
+      // final cmd = Wrapper.runCmdSync(("/data/data/vn.shadichy.parted/files/usr/bin/parted", ["/dev/block/ram0", "-l"]));
+      // // final cmd = Wrapper.runCmdSync(("ls", ["/data/data/vn.shadichy.parted/files/usr/lib"]));
+      // print(cmd.stdout);
+      // print(cmd.stderr);
+      // Parted.list.then((c) {
+      //   setState(() {
+      //     text = c.stdout.toString();
+      //     print(text);
+      //   });
+      // });
+    });
     // SuBinary().init().then((_) {
     //   deviceInit().then((_) {
     //     print("#########################");

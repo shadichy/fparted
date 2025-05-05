@@ -44,7 +44,7 @@ class DataSize {
       } else {
         throw FormatException("Invalid data size string");
       }
-    } else if (RegExp(r"[0-9]b$").hasMatch(lowerCase)) {
+    } else if (RegExp(r"[0-9]+b$").hasMatch(lowerCase)) {
       return DataSize.B(BigInt.parse(string.substring(0, string.length - 1)));
     } else {
       final BigInt value = BigInt.parse(string.substring(0, string.length - 2));
@@ -100,4 +100,7 @@ class DataSize {
 
   @override
   int get hashCode => byte.hashCode;
+
+  @override
+  String toString() => "${inB.toString()}B";
 }

@@ -61,6 +61,7 @@ abstract final class Wrapper {
     await SuBinary().init();
     await deviceInit();
     await PartedBinary().init();
+    await BlkidBinary().init();
     await BtrfsprogsBinary().init();
     await DosfstoolsBinary().init();
     await E2fsprogsBinary().init();

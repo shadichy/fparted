@@ -14,7 +14,7 @@ extension DiskFlagString on DiskFlag {
       strMap.entries.firstWhere((f) => f.value.index == index).key;
 }
 
-enum PartitionTable { AIX, AMIGA, BSD, DVH, GPT, LOOP, MAC, MSDOS, PC98, SUN }
+enum PartitionTable { AIX, AMIGA, BSD, DVH, GPT, LOOP, MAC, MSDOS, PC98, SUN, unknown }
 
 extension PartitionTableString on PartitionTable {
   static final strMap = {
@@ -29,6 +29,7 @@ extension PartitionTableString on PartitionTable {
     "mbr": PartitionTable.MSDOS,
     "pc98": PartitionTable.PC98,
     "sun": PartitionTable.SUN,
+    "unknown": PartitionTable.unknown,
   };
 
   static PartitionTable from(String string) =>

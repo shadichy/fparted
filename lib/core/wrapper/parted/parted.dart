@@ -11,7 +11,7 @@ class Parted {
   const Parted(this.disk);
 
   PartedPartitionOperation partition(int number) {
-    return PartedPartitionOperation(disk: disk, partitionNumber: number);
+    return PartedPartitionOperation(diskDevice: disk.device, partitionNumber: number);
   }
 
   static Future<ProcessResult> get list async {
@@ -78,44 +78,44 @@ class Parted {
 }
 
 class PartedPartitionOperation {
-  final Disk disk;
+  final Device diskDevice;
   final int partitionNumber;
 
   const PartedPartitionOperation({
-    required this.disk,
+    required this.diskDevice,
     required this.partitionNumber,
   });
   factory PartedPartitionOperation.from(Partition partition) {
     return PartedPartitionOperation(
-      disk: partition.disk,
+      diskDevice: partition.diskDevice,
       partitionNumber: partition.number,
     );
   }
 
   Future<ProcessResult> flag(PartitionFlag flag, bool enable) async {
     return Wrapper.runParted((
-      disk.device,
+      diskDevice,
       ["set", "$partitionNumber", flag.str, enable ? "on" : "off"],
     ));
   }
 
   Future<ProcessResult> label(String name) async {
-    return Wrapper.runParted((disk.device, ["name", "$partitionNumber", name]));
+    return Wrapper.runParted((diskDevice, ["name", "$partitionNumber", name]));
   }
 
   Future<ProcessResult> setTypeId(DeviceId id) async {
     return Wrapper.runParted((
-      disk.device,
+      diskDevice,
       ["type", "$partitionNumber"],
       //do something with id
     ));
   }
 
   Future<ProcessResult> resize(DataSize size) async {
-    return Wrapper.runParted((disk.device, []));
+    return Wrapper.runParted((diskDevice, []));
   }
 
   Future<ProcessResult> remove() async {
-    return Wrapper.runParted((disk.device, ["rm", "$partitionNumber"]));
+    return Wrapper.runParted((diskDevice, ["rm", "$partitionNumber"]));
   }
 }

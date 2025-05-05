@@ -51,6 +51,17 @@ class Device {
       throw Exception("Device $device does not exist");
     }
   }
+
+  static Device? tryParse(String device) {
+    try {
+      return Device(device);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  @override
+  String toString() => raw;
 }
 
 Future<void> deviceInit() async => await _DeviceInit().init();
@@ -134,6 +145,14 @@ class DeviceId {
     }
   }
 
+  static DeviceId? tryParse(dynamic value) {
+    try {
+      return DeviceId(value);
+    } catch (_) {
+      return null;
+    }
+  }
+
   String get type => _type.name;
 
   String toID() {
@@ -141,8 +160,8 @@ class DeviceId {
   }
 
   String toUUID() {
-    // TODO: implement toString
-    return super.toString();
+    final splitted = id.toRadixString(16).split("");
+    return "${splitted.take(8).join()}-${splitted.take(12).skip(8).join()}-${splitted.take(16).skip(12).join()}-${splitted.take(20).skip(16).join()}-${splitted.skip(20).join()}";
   }
 
   @override

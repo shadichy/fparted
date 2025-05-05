@@ -1,10 +1,12 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:fparted/core/model/data_size.dart';
 import 'package:fparted/core/model/device.dart';
+import 'package:fparted/core/model/serializable.dart';
 import 'package:fparted/core/wrapper/wrapper.dart';
 
-class FileSystemSpace {
+final class FileSystemSpace implements Serializable {
   final DataSize size;
   final DataSize used;
   final DataSize free;
@@ -15,9 +17,19 @@ class FileSystemSpace {
     : used = size - free;
   FileSystemSpace.free_used({required this.free, required this.used})
     : size = free + used;
+
+  @override
+  Map<String, dynamic> toJson() => {
+    "size": size.toString(),
+    "used": used.toString(),
+    "free": free.toString(),
+  };
+
+  @override
+  String toString() => jsonEncode(toJson());
 }
 
-abstract class FileSystemData {
+abstract class FileSystemData implements Serializable {
   static final tmpMount = "/data/local/tmp";
   final Device partition;
   final FileSystem type;
@@ -52,12 +64,12 @@ abstract class FileSystemData {
       } else if (str.startsWith("LABEL=")) {
         name = extractVar(str).$2;
       } else if (str.startsWith("TYPE=")) {
-        final fs = extractVar(str).$2;
+        final fs = extractVar(str).$2.toLowerCase();
         if (FileSystem.values.map((f) => f.name).contains(fs)) {
           type = FileSystem.values.firstWhere((f) => f.name == fs);
         }
       } else if (str.startsWith("BLOCK_SIZE=")) {
-        blockSize = DataSize.fromString(extractVar(str).$2);
+        blockSize = DataSize.parse(extractVar(str).$2);
       }
     }
     return OtherFS(
@@ -98,6 +110,29 @@ abstract class FileSystemData {
   ProcessResult labelSync(String label);
   ProcessResult repairSync();
   ProcessResult? resizeSync(DataSize size) => null;
+
+  @override
+  Map<String, dynamic> toJson() => {
+    "partition": partition,
+    "type": type,
+    "name": name,
+    "id": id,
+    "space": space,
+    "blockSize": blockSize,
+  };
+  @override
+  String toString() => jsonEncode(
+    toJson(),
+    toEncodable: (e) {
+      if (e is Device || e is DataSize || e is Enum) {
+        return e.toString();
+      }
+      if (e is Serializable) {
+        return e.toJson();
+      }
+      return e;
+    },
+  );
 }
 
 final class OtherFS extends FileSystemData {
