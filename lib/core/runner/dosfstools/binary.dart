@@ -1,4 +1,5 @@
-import 'package:fparted/core/wrapper/base.dart';
+import 'package:fparted/core/runner/base.dart';
+import 'package:fparted/core/runner/job.dart';
 
 enum DosFSVariants { fat12, fat16, fat32 }
 
@@ -11,7 +12,7 @@ class DosfstoolsBinary extends FilesystemPackage<DosFSVariants> {
   get binaries => ["fatlabel", "fsck.fat", "mkfs.fat"];
 
   @override
-  create(device, [variant, label]) => (
+  create(device, [variant, label]) => Job(
     "mkfs.fat",
     [
       "-F",
@@ -26,13 +27,13 @@ class DosfstoolsBinary extends FilesystemPackage<DosFSVariants> {
   );
 
   @override
-  dump(device, [_]) => ("fsck.fat", ["-n", device.raw]);
+  dump(device, [_]) => Job(binaryMap["fsck.fat"] ?? "fsck.fat", ["-n", device.raw]);
 
   @override
-  label(device, label, [_]) => ("fatlabel", [device.raw, label]);
+  label(device, label, [_]) => Job(binaryMap["fatlabel"] ?? "fatlabel", [device.raw, label]);
 
   @override
-  repair(device, [_]) => ("fsck.fat", ["-a", device.raw]);
+  repair(device, [_]) => Job(binaryMap["fsck.fat"] ?? "fsck.fat", ["-a", device.raw]);
 
   @override
   // dosfstools has no ability to resize

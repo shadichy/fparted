@@ -1,6 +1,7 @@
 import 'dart:io';
 
-import 'package:fparted/core/wrapper/base.dart';
+import 'package:fparted/core/runner/base.dart';
+import 'package:fparted/core/runner/job.dart';
 
 class SuBinary implements RequiredPackage {
   SuBinary._i();
@@ -12,6 +13,8 @@ class SuBinary implements RequiredPackage {
   @override
   // Always required
   get isAvailable => true;
+
+  bool initialized = false;
 
   @override
   init() async {
@@ -25,15 +28,16 @@ class SuBinary implements RequiredPackage {
     } else {
       throw Exception("Unsupported platform");
     }
+    initialized = true;
   }
 
   @override
-  (String, List<String>) toCmd(List<String> arguments) {
+  toJob(List<String> arguments) {
     final args = argToArg(arguments);
     if (Platform.isAndroid) {
-      return (suBinary, ["-c", args]);
+      return Job(suBinary, ["-c", args]);
     } else if (Platform.isLinux) {
-      return ("pkexec", ["su", "-c", args]);
+      return Job("pkexec", ["su", "-c", args]);
     } else {
       throw Exception("Unsupported platform");
     }

@@ -1,8 +1,8 @@
 import 'package:fparted/core/filesystem/fs.dart';
 import 'package:fparted/core/model/data_size.dart';
 import 'package:fparted/core/model/device.dart';
-import 'package:fparted/core/wrapper/dosfstools/binary.dart';
-import 'package:fparted/core/wrapper/wrapper.dart';
+import 'package:fparted/core/runner/dosfstools/binary.dart';
+import 'package:fparted/core/runner/wrapper.dart';
 
 class _DosData extends FileSystemData {
   const _DosData({
@@ -17,12 +17,19 @@ class _DosData extends FileSystemData {
   factory _DosData._blkid(
     partition, [
     DosFSVariants variant = DosFSVariants.fat32,
+    FileSystemData? data,
     Map partedOutput = const {},
   ]) {
-    final blkidData = FileSystemData.fromPartition(partition, partedOutput);
-    final dumpData = Wrapper.runCmdSync(
-      DosfstoolsBinary().dump(partition),
-    ).stdout.toString().split("\n").last.split("/");
+    final blkidData =
+        data ?? FileSystemData.fromPartition(partition, partedOutput);
+    final regExp = RegExp(r"[0-9]+ files, [0-9]+/[0-9]+ clusters");
+    final dumpData = RegExp(r"[0-9]+/[0-9]+")
+        .firstMatch(
+          Wrapper.runJobSync(
+            DosfstoolsBinary().dump(partition),
+          ).stdout.toString().split("\n").firstWhere((l) => regExp.hasMatch(l)),
+        )![0]!
+        .split("/");
     final blockSize = DataSize(BigInt.from(4096));
     return _DosData(
       partition: partition,
@@ -31,14 +38,8 @@ class _DosData extends FileSystemData {
       id: blkidData.id,
       blockSize: blockSize,
       space: FileSystemSpace.size_used(
-        size: DataSize.fromBlock(
-          BigInt.parse(dumpData.last.split(" ").first),
-          blockSize,
-        ),
-        used: DataSize.fromBlock(
-          BigInt.parse(dumpData.first.split(" ").last),
-          blockSize,
-        ),
+        size: DataSize.fromBlock(BigInt.parse(dumpData.last), blockSize),
+        used: DataSize.fromBlock(BigInt.parse(dumpData.first), blockSize),
       ),
       variant: DosFSVariants.fat32,
     );
@@ -53,24 +54,10 @@ class _DosData extends FileSystemData {
   get canShink => false;
 
   @override
-  label(label) async {
-    return await Wrapper.runCmd(DosfstoolsBinary().label(partition, label));
-  }
+  label(label) => [DosfstoolsBinary().label(partition, label)];
 
   @override
-  labelSync(label) {
-    return Wrapper.runCmdSync(DosfstoolsBinary().label(partition, label));
-  }
-
-  @override
-  repair() async {
-    return await Wrapper.runCmd(DosfstoolsBinary().repair(partition));
-  }
-
-  @override
-  repairSync() {
-    return Wrapper.runCmdSync(DosfstoolsBinary().repair(partition));
-  }
+  repair() => [DosfstoolsBinary().repair(partition)];
 
   @override
   get toolChainAvailable => DosfstoolsBinary().isAvailable;
@@ -88,15 +75,19 @@ final class Fat12 extends _DosData {
     required super.blockSize,
   }) : super(variant: _variant);
 
-  factory Fat12(Device partition, [Map partedOutput = const {}]) {
-    final data = _DosData._blkid(partition, _variant, partedOutput);
+  factory Fat12(
+    Device partition, [
+    FileSystemData? data,
+    Map partedOutput = const {},
+  ]) {
+    final blkidData = _DosData._blkid(partition, _variant, data, partedOutput);
     return Fat12._init(
       partition: partition,
-      type: data.type,
-      name: data.name,
-      id: data.id,
-      space: data.space,
-      blockSize: data.blockSize,
+      type: blkidData.type,
+      name: blkidData.name,
+      id: blkidData.id,
+      space: blkidData.space,
+      blockSize: blkidData.blockSize,
     );
   }
 }
@@ -113,15 +104,19 @@ final class Fat16 extends _DosData {
     required super.blockSize,
   }) : super(variant: _variant);
 
-  factory Fat16(Device partition, [Map partedOutput = const {}]) {
-    final data = _DosData._blkid(partition, _variant, partedOutput);
+  factory Fat16(
+    Device partition, [
+    FileSystemData? data,
+    Map partedOutput = const {},
+  ]) {
+    final blkidData = _DosData._blkid(partition, _variant, data, partedOutput);
     return Fat16._init(
       partition: partition,
-      type: data.type,
-      name: data.name,
-      id: data.id,
-      space: data.space,
-      blockSize: data.blockSize,
+      type: blkidData.type,
+      name: blkidData.name,
+      id: blkidData.id,
+      space: blkidData.space,
+      blockSize: blkidData.blockSize,
     );
   }
 }
@@ -138,15 +133,19 @@ final class Fat32 extends _DosData {
     required super.blockSize,
   }) : super(variant: _variant);
 
-  factory Fat32(Device partition, [Map partedOutput = const {}]) {
-    final data = _DosData._blkid(partition, _variant, partedOutput);
+  factory Fat32(
+    Device partition, [
+    FileSystemData? data,
+    Map partedOutput = const {},
+  ]) {
+    final blkidData = _DosData._blkid(partition, _variant, data, partedOutput);
     return Fat32._init(
       partition: partition,
-      type: data.type,
-      name: data.name,
-      id: data.id,
-      space: data.space,
-      blockSize: data.blockSize,
+      type: blkidData.type,
+      name: blkidData.name,
+      id: blkidData.id,
+      space: blkidData.space,
+      blockSize: blkidData.blockSize,
     );
   }
 }

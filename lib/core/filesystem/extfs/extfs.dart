@@ -1,8 +1,8 @@
 import 'package:fparted/core/filesystem/fs.dart';
 import 'package:fparted/core/model/data_size.dart';
 import 'package:fparted/core/model/device.dart';
-import 'package:fparted/core/wrapper/e2fsprogs/binary.dart';
-import 'package:fparted/core/wrapper/wrapper.dart';
+import 'package:fparted/core/runner/e2fsprogs/binary.dart';
+import 'package:fparted/core/runner/wrapper.dart';
 
 class _E2Data extends FileSystemData {
   const _E2Data({
@@ -17,11 +17,13 @@ class _E2Data extends FileSystemData {
   factory _E2Data._blkid(
     partition, [
     E2FSVariants variant = E2FSVariants.ext4,
+    FileSystemData? data,
     Map partedOutput = const {},
   ]) {
-    final blkidData = FileSystemData.fromPartition(partition, partedOutput);
+    final blkidData =
+        data ?? FileSystemData.fromPartition(partition, partedOutput);
     final dumpRegex = RegExp(r"^(Block (size|count)|Free blocks)");
-    final dumpData = Wrapper.runCmdSync(E2fsprogsBinary().dump(partition))
+    final dumpData = Wrapper.runJobSync(E2fsprogsBinary().dump(partition))
         .stdout
         .toString()
         .split("\n")
@@ -53,38 +55,13 @@ class _E2Data extends FileSystemData {
   get canShink => true;
 
   @override
-  label(label) async {
-    return await Wrapper.runCmd(E2fsprogsBinary().label(partition, label));
-  }
+  label(label) => [E2fsprogsBinary().label(partition, label)];
 
   @override
-  labelSync(label) {
-    return Wrapper.runCmdSync(E2fsprogsBinary().label(partition, label));
-  }
+  repair() => [E2fsprogsBinary().repair(partition)];
 
   @override
-  repair() async {
-    return await Wrapper.runCmd(E2fsprogsBinary().repair(partition));
-  }
-
-  @override
-  repairSync() {
-    return Wrapper.runCmdSync(E2fsprogsBinary().repair(partition));
-  }
-
-  @override
-  resize(size) async {
-    final cmd = E2fsprogsBinary().resize(partition, size);
-    if (cmd != null) return await Wrapper.runCmd(cmd);
-    throw Exception("Cant resize filesystem");
-  }
-
-  @override
-  resizeSync(size) {
-    final cmd = E2fsprogsBinary().resize(partition, size);
-    if (cmd != null) return Wrapper.runCmdSync(cmd);
-    throw Exception("Cant resize filesystem");
-  }
+  resize(size) => [E2fsprogsBinary().resize(partition, size)];
 
   @override
   get toolChainAvailable => E2fsprogsBinary().isAvailable;
@@ -102,15 +79,19 @@ final class Ext2 extends _E2Data {
     required super.blockSize,
   }) : super(variant: _variant);
 
-  factory Ext2(Device partition, [Map partedOutput = const {}]) {
-    final data = _E2Data._blkid(partition, _variant, partedOutput);
+  factory Ext2(
+    Device partition, [
+    FileSystemData? data,
+    Map partedOutput = const {},
+  ]) {
+    final blkidData = _E2Data._blkid(partition, _variant, data, partedOutput);
     return Ext2._init(
       partition: partition,
-      type: data.type,
-      name: data.name,
-      id: data.id,
-      space: data.space,
-      blockSize: data.blockSize,
+      type: blkidData.type,
+      name: blkidData.name,
+      id: blkidData.id,
+      space: blkidData.space,
+      blockSize: blkidData.blockSize,
     );
   }
 }
@@ -127,15 +108,19 @@ final class Ext3 extends _E2Data {
     required super.blockSize,
   }) : super(variant: _variant);
 
-  factory Ext3(Device partition, [Map partedOutput = const {}]) {
-    final data = _E2Data._blkid(partition, _variant, partedOutput);
+  factory Ext3(
+    Device partition, [
+    FileSystemData? data,
+    Map partedOutput = const {},
+  ]) {
+    final blkidData = _E2Data._blkid(partition, _variant, data, partedOutput);
     return Ext3._init(
       partition: partition,
-      type: data.type,
-      name: data.name,
-      id: data.id,
-      space: data.space,
-      blockSize: data.blockSize,
+      type: blkidData.type,
+      name: blkidData.name,
+      id: blkidData.id,
+      space: blkidData.space,
+      blockSize: blkidData.blockSize,
     );
   }
 }
@@ -152,15 +137,19 @@ final class Ext4 extends _E2Data {
     required super.blockSize,
   }) : super(variant: _variant);
 
-  factory Ext4(Device partition, [Map partedOutput = const {}]) {
-    final data = _E2Data._blkid(partition, _variant, partedOutput);
+  factory Ext4(
+    Device partition, [
+    FileSystemData? data,
+    Map partedOutput = const {},
+  ]) {
+    final blkidData = _E2Data._blkid(partition, _variant, data, partedOutput);
     return Ext4._init(
       partition: partition,
-      type: data.type,
-      name: data.name,
-      id: data.id,
-      space: data.space,
-      blockSize: data.blockSize,
+      type: blkidData.type,
+      name: blkidData.name,
+      id: blkidData.id,
+      space: blkidData.space,
+      blockSize: blkidData.blockSize,
     );
   }
 }

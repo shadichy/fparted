@@ -1,8 +1,8 @@
 import 'package:fparted/core/filesystem/fs.dart';
 import 'package:fparted/core/model/data_size.dart';
 import 'package:fparted/core/model/device.dart';
-import 'package:fparted/core/wrapper/f2fs-tools/binary.dart';
-import 'package:fparted/core/wrapper/wrapper.dart';
+import 'package:fparted/core/runner/f2fs-tools/binary.dart';
+import 'package:fparted/core/runner/wrapper.dart';
 
 final class F2FS extends FileSystemData {
   const F2FS._init({
@@ -13,10 +13,15 @@ final class F2FS extends FileSystemData {
     required super.blockSize,
     required super.space,
   });
-  factory F2FS(Device partition, [Map partedOutput = const {}]) {
-    final blkidData = FileSystemData.fromPartition(partition, partedOutput);
-    final dumpRegex = RegExp(r"^(user_)?block_count");
-    final dumpData = Wrapper.runCmdSync(F2fstoolsBinary().dump(partition))
+  factory F2FS(
+    Device partition, [
+    FileSystemData? data,
+    Map partedOutput = const {},
+  ]) {
+    final blkidData =
+        data ?? FileSystemData.fromPartition(partition, partedOutput);
+    final dumpRegex = RegExp(r"^(user|valid)_block_count");
+    final dumpData = Wrapper.runJobSync(F2fstoolsBinary().dump(partition))
         .stdout
         .toString()
         .split("\n")
@@ -30,10 +35,13 @@ final class F2FS extends FileSystemData {
       name: blkidData.name,
       id: blkidData.id,
       blockSize: blkidData.blockSize,
-      space: FileSystemSpace.size_free(
-        size: DataSize.fromBlock(getData("block_count"), blkidData.blockSize),
-        free: DataSize.fromBlock(
+      space: FileSystemSpace.size_used(
+        size: DataSize.fromBlock(
           getData("user_block_count"),
+          blkidData.blockSize,
+        ),
+        used: DataSize.fromBlock(
+          getData("valid_block_count"),
           blkidData.blockSize,
         ),
       ),
@@ -48,50 +56,21 @@ final class F2FS extends FileSystemData {
 
   @override
   check() async {
-    // TODO: 
+    // TODO:
     throw UnimplementedError();
   }
 
   @override
-  checkSync() {
-    // TODO: 
-    throw UnimplementedError();
-  }
+  label(label) => [F2fstoolsBinary().label(partition, label)];
 
   @override
-  label(label) async {
-    return await Wrapper.runCmd(F2fstoolsBinary().label(partition, label));
-  }
-
-  @override
-  labelSync(label) {
-    return Wrapper.runCmdSync(F2fstoolsBinary().label(partition, label));
-  }
-
-  @override
-  repair() async {
-    return await Wrapper.runCmd(F2fstoolsBinary().repair(partition));
+  repair() => [
+    F2fstoolsBinary().repair(partition),
     // more procedure
-  }
+  ];
 
   @override
-  repairSync() {
-    return Wrapper.runCmdSync(F2fstoolsBinary().repair(partition));
-  }
-
-  @override
-  resize(size) async {
-    final cmd = F2fstoolsBinary().resize(partition, size);
-    if (cmd != null) return await Wrapper.runCmd(cmd);
-    throw Exception("Cant resize filesystem");
-  }
-
-  @override
-  resizeSync(size) {
-    final cmd = F2fstoolsBinary().resize(partition, size);
-    if (cmd != null) return Wrapper.runCmdSync(cmd);
-    throw Exception("Cant resize filesystem");
-  }
+  resize(size) => [F2fstoolsBinary().resize(partition, size)];
 
   @override
   get toolChainAvailable => F2fstoolsBinary().isAvailable;

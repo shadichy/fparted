@@ -1,4 +1,5 @@
-import 'package:fparted/core/wrapper/base.dart';
+import 'package:fparted/core/runner/base.dart';
+import 'package:fparted/core/runner/job.dart';
 
 class ExfatprogsBinary extends FilesystemPackage {
   ExfatprogsBinary._i();
@@ -9,7 +10,7 @@ class ExfatprogsBinary extends FilesystemPackage {
   get binaries => ["mkfs.exfat", "dump.exfat", "exfatlabel", "fsck.exfat"];
 
   @override
-  create(device, [_, label]) => (
+  create(device, [_, label]) => Job(
     "mkfs.exfat",
     [
       ...(label != null ? ["-L", label] : []),
@@ -18,13 +19,13 @@ class ExfatprogsBinary extends FilesystemPackage {
   );
 
   @override
-  dump(device, [_]) => ("dump.exfat", [device.raw]);
+  dump(device, [_]) => Job(binaryMap["dump.exfat"] ?? "dump.exfat", [device.raw]);
 
   @override
-  label(device, label, [_]) => ("exfatlabel", [device.raw, label]);
+  label(device, label, [_]) => Job(binaryMap["exfatlabel"] ?? "exfatlabel", [device.raw, label]);
 
   @override
-  repair(device, [_]) => ("fsck.exfat", [device.raw]);
+  repair(device, [_]) => Job(binaryMap["fsck.exfat"] ?? "fsck.exfat", [device.raw]);
 
   @override
   // exfat has no ability to resize

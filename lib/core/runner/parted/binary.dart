@@ -1,4 +1,5 @@
-import 'package:fparted/core/wrapper/base.dart';
+import 'package:fparted/core/runner/base.dart';
+import 'package:fparted/core/runner/job.dart';
 
 class PartedBinary implements RequiredPackage {
   PartedBinary._i();
@@ -22,8 +23,12 @@ class PartedBinary implements RequiredPackage {
   }
 
   @override
-  (String, List<String>) toCmd(List<String> arguments) => (
-    partedBinary,
-    [arguments[0], "-j", "-s", "unit", "b", argToArg(arguments.skip(1))],
-  );
+  Job toJob(List<String> arguments) => Job(partedBinary, [
+    arguments[0],
+    "-j",
+    "-s",
+    "unit",
+    "b",
+    argToArg(arguments.skip(1)),
+  ]);
 }

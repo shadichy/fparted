@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:fparted/core/wrapper/wrapper.dart';
+import 'package:fparted/core/runner/wrapper.dart';
 
 enum DeviceType {
   // ignore: constant_identifier_names
@@ -78,7 +78,7 @@ class _DeviceInit {
   Future<void> init() async {
     // read from Hive config
     if (Platform.isAndroid) {
-      fallback = Device("/dev/block/ram0");
+      fallback = Device.tryParse("/dev/block/zram0") ?? Device("/dev/block/ram0");
     } else if (Platform.isLinux) {
       fallback = Device("/dev/zram0");
     } else {
@@ -105,7 +105,7 @@ class DeviceId {
     }
   }
 
-  DeviceId.fromInt(int value) : _type = _DeviceIdType.ID, id = BigInt.from(16);
+  DeviceId.fromInt(int value) : _type = _DeviceIdType.ID, id = BigInt.from(value);
 
   DeviceId.fromBigInt(this.id) : _type = _DeviceIdType.UUID;
 

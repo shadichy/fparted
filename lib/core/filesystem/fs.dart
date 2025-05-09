@@ -1,10 +1,21 @@
 import 'dart:convert';
-import 'dart:io';
 
+import 'package:fparted/core/filesystem/btrfs/btrfs.dart';
+import 'package:fparted/core/filesystem/extfs/extfs.dart';
+import 'package:fparted/core/filesystem/f2fs/f2fs.dart';
+import 'package:fparted/core/filesystem/fat/exfat.dart';
+import 'package:fparted/core/filesystem/fat/vfat.dart';
 import 'package:fparted/core/model/data_size.dart';
 import 'package:fparted/core/model/device.dart';
 import 'package:fparted/core/model/serializable.dart';
-import 'package:fparted/core/wrapper/wrapper.dart';
+import 'package:fparted/core/runner/base.dart';
+import 'package:fparted/core/runner/btrfs-progs/binary.dart';
+import 'package:fparted/core/runner/dosfstools/binary.dart';
+import 'package:fparted/core/runner/e2fsprogs/binary.dart';
+import 'package:fparted/core/runner/exfatprogs/binary.dart';
+import 'package:fparted/core/runner/f2fs-tools/binary.dart';
+import 'package:fparted/core/runner/job.dart';
+import 'package:fparted/core/runner/wrapper.dart';
 
 final class FileSystemSpace implements Serializable {
   final DataSize size;
@@ -51,39 +62,71 @@ abstract class FileSystemData implements Serializable {
     Device partition, [
     Map partedOutput = const {},
   ]) {
-    FileSystem type = FileSystem.none;
+    String? partedFS = partedOutput["filesystem"];
+    if (partedFS?.contains("swap") ?? false) partedFS = "swap";
+
+    FileSystem type =
+        partedOutput["filesystem"] == null
+            ? FileSystem.none
+            : FileSystem.values.firstWhere(
+              (f) => f.name == partedOutput["filesystem"],
+            );
+
     String name = "";
-    DeviceId id = DeviceId(0);
-    DataSize blockSize = DataSize(BigInt.zero);
-    for (final str in Wrapper.runBlkidSync((
-      partition,
-      [],
-    )).stdout.toString().split(" ")) {
+    DeviceId? id;
+    DataSize? blockSize;
+    for (final str in Wrapper.runBlkidSync(
+      PartedJob(partition, []),
+    ).stdout.toString().split(" ")) {
       if (str.startsWith("UUID=")) {
         id = DeviceId.fromString(extractVar(str).$2);
       } else if (str.startsWith("LABEL=")) {
         name = extractVar(str).$2;
-      } else if (str.startsWith("TYPE=")) {
-        final fs = extractVar(str).$2.toLowerCase();
-        if (FileSystem.values.map((f) => f.name).contains(fs)) {
-          type = FileSystem.values.firstWhere((f) => f.name == fs);
-        }
       } else if (str.startsWith("BLOCK_SIZE=")) {
         blockSize = DataSize.parse(extractVar(str).$2);
+      } else if (str.startsWith("TYPE=") && type == FileSystem.none) {
+        final fs = extractVar(str).$2.toLowerCase();
+        if (fs == "vfat") {
+          type = FileSystem.fat16;
+        } else if (FileSystem.values.map((f) => f.name).contains(fs)) {
+          type = FileSystem.values.firstWhere((f) => f.name == fs);
+        }
       }
     }
-    return OtherFS(
+    final data = OtherFS(
       partition: partition,
       type: type,
       name: name,
       id: id,
       blockSize: blockSize,
     );
+    FileSystemData checker(
+      FilesystemPackage packageData,
+      FileSystemData Function(Device, [FileSystemData?, Map<dynamic, dynamic>])
+      callback,
+    ) {
+      return packageData.isAvailable
+          ? callback(partition, data, partedOutput)
+          : data;
+    }
+
+    return switch (type) {
+      FileSystem.btrfs => checker(BtrfsprogsBinary(), BtrFS.new),
+      FileSystem.ext2 => checker(E2fsprogsBinary(), Ext2.new),
+      FileSystem.ext3 => checker(E2fsprogsBinary(), Ext3.new),
+      FileSystem.ext4 => checker(E2fsprogsBinary(), Ext4.new),
+      FileSystem.f2fs => checker(F2fstoolsBinary(), F2FS.new),
+      FileSystem.exfat => checker(ExfatprogsBinary(), ExFat.new),
+      FileSystem.fat12 => checker(DosfstoolsBinary(), Fat12.new),
+      FileSystem.fat16 => checker(DosfstoolsBinary(), Fat16.new),
+      FileSystem.fat32 => checker(DosfstoolsBinary(), Fat32.new),
+      _ => data,
+    };
   }
 
   static (String, String) extractVar(String str) {
     final splitted = str.split("=");
-    return (splitted.first, splitted.last.replaceAll("\"", ""));
+    return (splitted.first, splitted.last.replaceAll("\"", "").trim());
   }
 
   bool get toolChainAvailable;
@@ -91,25 +134,14 @@ abstract class FileSystemData implements Serializable {
   bool get canGrow;
   bool get canShink;
 
-  Future<ProcessResult> check() async {
-    final mount = await Wrapper.runCmd(("mount", [partition.raw, tmpMount]));
-    if (mount.exitCode != 0) return mount;
-    return await Wrapper.runCmd(("umount", [tmpMount]));
-  }
+  List<Job> check() => [
+    Job("mount", [partition.raw, tmpMount]),
+    Job("umount", [tmpMount]),
+  ];
 
-  Future<ProcessResult> label(String label);
-  Future<ProcessResult> repair();
-  Future<ProcessResult>? resize(DataSize size) => null;
-
-  ProcessResult checkSync() {
-    final mount = Wrapper.runCmdSync(("mount", [partition.raw, tmpMount]));
-    if (mount.exitCode != 0) return mount;
-    return Wrapper.runCmdSync(("umount", [tmpMount]));
-  }
-
-  ProcessResult labelSync(String label);
-  ProcessResult repairSync();
-  ProcessResult? resizeSync(DataSize size) => null;
+  List<Job> label(String label);
+  List<Job> repair();
+  List<Job?> resize(DataSize size) => [];
 
   @override
   Map<String, dynamic> toJson() => {
@@ -144,7 +176,7 @@ final class OtherFS extends FileSystemData {
     DataSize? blockSize,
   }) : super(
          id: id ?? DeviceId(0),
-         blockSize: blockSize ?? DataSize(BigInt.zero),
+         blockSize: blockSize ?? DataSize(BigInt.from(4096)),
        );
 
   @override
@@ -157,13 +189,7 @@ final class OtherFS extends FileSystemData {
   label(_) => throw UnsupportedError("Unsupported");
 
   @override
-  labelSync(_) => throw UnsupportedError("Unsupported");
-
-  @override
   repair() => throw UnsupportedError("Unsupported");
-
-  @override
-  repairSync() => throw UnsupportedError("Unsupported");
 
   @override
   get toolChainAvailable => false;
@@ -186,10 +212,12 @@ enum FileSystem {
   hfs_plus,
   jfs,
   ntfs,
+  reiser4,
   reiserfs,
   xfs,
   lvm2,
   zfs,
+  swap,
   squashfs,
   erofs,
   none,

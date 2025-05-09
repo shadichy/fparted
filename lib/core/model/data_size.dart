@@ -84,6 +84,15 @@ class DataSize {
   double get inZiB => inEiB / ratio;
   double get inYiB => inZiB / ratio;
 
+  (double, String) _inKiB() => (inKiB, "KiB");
+  (double, String) _inMiB() => (inMiB, "MiB");
+  (double, String) _inGiB() => (inGiB, "GiB");
+  (double, String) _inTiB() => (inTiB, "TiB");
+  (double, String) _inPiB() => (inPiB, "PiB");
+  (double, String) _inEiB() => (inEiB, "EiB");
+  (double, String) _inZiB() => (inZiB, "ZiB");
+  (double, String) _inYiB() => (inYiB, "YiB");
+
   DataSize operator +(DataSize other) => DataSize(inB + other.inB);
   DataSize operator -(DataSize other) => DataSize(inB - other.inB);
 
@@ -103,4 +112,23 @@ class DataSize {
 
   @override
   String toString() => "${inB.toString()}B";
+
+  String humanReadable() {
+    var result = toString();
+    for (final func in [
+      _inKiB,
+      _inMiB,
+      _inGiB,
+      _inTiB,
+      _inPiB,
+      _inEiB,
+      _inZiB,
+      _inYiB,
+    ]) {
+      final value = func();
+      if (value.$1 <= 1) break;
+      result = "${value.$1.toStringAsFixed(2)}${value.$2}";
+    }
+    return result;
+  }
 }

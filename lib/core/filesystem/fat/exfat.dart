@@ -1,6 +1,6 @@
 import 'package:fparted/core/filesystem/fs.dart';
-import 'package:fparted/core/wrapper/exfatprogs/binary.dart';
-import 'package:fparted/core/wrapper/wrapper.dart';
+import 'package:fparted/core/runner/exfatprogs/binary.dart';
+import 'package:fparted/core/runner/wrapper.dart';
 import 'package:fparted/core/model/data_size.dart';
 import 'package:fparted/core/model/device.dart';
 
@@ -13,10 +13,15 @@ final class ExFat extends FileSystemData {
     required super.blockSize,
     required super.space,
   });
-  factory ExFat(Device partition, [Map partedOutput = const {}]) {
-    final blkidData = FileSystemData.fromPartition(partition, partedOutput);
+  factory ExFat(
+    Device partition, [
+    FileSystemData? data,
+    Map partedOutput = const {},
+  ]) {
+    final blkidData =
+        data ?? FileSystemData.fromPartition(partition, partedOutput);
     final dumpRegex = RegExp(r"^(Total|Free) Clusters|Cluster size");
-    final dumpData = Wrapper.runCmdSync(ExfatprogsBinary().dump(partition))
+    final dumpData = Wrapper.runJobSync(ExfatprogsBinary().dump(partition))
         .stdout
         .toString()
         .split("\n")
@@ -45,37 +50,19 @@ final class ExFat extends FileSystemData {
   get canShink => false;
 
   @override
-  check() async {
+  check() {
     // TODO:
     throw UnimplementedError();
   }
 
   @override
-  checkSync() {
-    // TODO:
-    throw UnimplementedError();
-  }
+  label(label) => [ExfatprogsBinary().label(partition, label)];
 
   @override
-  label(label) async {
-    return await Wrapper.runCmd(ExfatprogsBinary().label(partition, label));
-  }
-
-  @override
-  labelSync(label) {
-    return Wrapper.runCmdSync(ExfatprogsBinary().label(partition, label));
-  }
-
-  @override
-  repair() async {
-    return await Wrapper.runCmd(ExfatprogsBinary().repair(partition));
+  repair() => [
+    ExfatprogsBinary().repair(partition),
     // more procedure
-  }
-
-  @override
-  repairSync() {
-    return Wrapper.runCmdSync(ExfatprogsBinary().repair(partition));
-  }
+  ];
 
   @override
   get toolChainAvailable => ExfatprogsBinary().isAvailable;

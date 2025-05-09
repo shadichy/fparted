@@ -1,12 +1,13 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:fparted/core/filesystem/fs.dart';
 import 'package:fparted/core/model/data_size.dart';
 import 'package:fparted/core/model/device.dart';
 import 'package:fparted/core/model/serializable.dart';
-import 'package:fparted/core/wrapper/parted/classes.dart';
-import 'package:fparted/core/wrapper/parted/parted.dart';
+import 'package:fparted/core/runner/job.dart';
+import 'package:fparted/core/runner/parted/classes.dart';
+import 'package:fparted/core/runner/parted/parted.dart';
+import 'package:fparted/core/runner/wrapper.dart';
 
 final class Disk implements Serializable {
   final Device device;
@@ -33,22 +34,20 @@ final class Disk implements Serializable {
 
   Parted get parted => Parted(this);
 
-  Future<Partition> create({
+  List<Job> create({
     required DataSize start,
     required DataSize end,
     PartitionType type = PartitionType.PRIMARY,
     String? partitionLabel,
     FileSystem? fileSystem,
     String? fileSystemLabel,
-  }) async {
+  }) {
     // parted.createPart(start, end, type);
     // TODO:
     throw UnimplementedError();
   }
 
-  Future<ProcessResult> createTable(PartitionTable table) async {
-    return await parted.createTable(table);
-  }
+  List<Job> createTable(PartitionTable table) => parted.createTable(table);
 
   factory Disk.fromJson(Map data) {
     final device = Device(data["path"]);
@@ -69,22 +68,22 @@ final class Disk implements Serializable {
   }
 
   static Future<List<Disk>> get all async =>
-      (await Parted.list).stdout
+      (await Wrapper.runParted(Parted.list.first)).stdout
           .toString()
           .split("\n\n")
           .where((d) => d.trim().isNotEmpty)
           .map((d) => jsonDecode(d)["disk"] as Map)
-          .where((d) => d["path"] != fallbackDevice().raw)
+          .where((d) => !d["path"].toString().endsWith("ram0"))
           .map(Disk.fromJson)
           .toList();
 
   static List<Disk> get allSync =>
-      Parted.listSync.stdout
+      Wrapper.runJobSync(Parted.list.first).stdout
           .toString()
           .split("\n\n")
           .where((d) => d.trim().isNotEmpty)
           .map((d) => jsonDecode(d)["disk"] as Map)
-          .where((d) => d["path"] != fallbackDevice().raw)
+          .where((d) => !d["path"].toString().endsWith("ram0"))
           .map(Disk.fromJson)
           .toList();
 
@@ -138,6 +137,7 @@ class OrphanPartion implements Serializable {
   }
 
   Future<void> edit({String? name, String? fsName}) async {
+    // TODO:
     throw UnimplementedError();
   }
 
@@ -193,10 +193,10 @@ class Partition extends OrphanPartion {
       device: device,
       size: DataSize.fromString(data["size"]),
       type: PartitionTypeString.from(data["type"]),
-      id: DeviceId.fromString(data["uuid"]),
-      typeId: DeviceId.tryParse(data["type-uuid"]) ?? DeviceId.fromString(data["type-id"]),
+      id: DeviceId.tryParse(data["uuid"]),
+      typeId: DeviceId.tryParse(data["type-uuid"]) ?? DeviceId(data["type-id"]),
       name: data["name"],
-      fileSystem: FileSystemData.fromPartition(device),
+      fileSystem: FileSystemData.fromPartition(device, data),
       start: DataSize.fromString(data["start"]),
       end: DataSize.fromString(data["end"]),
       flags:
