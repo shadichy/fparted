@@ -1,6 +1,8 @@
+
 import 'package:flutter/material.dart';
 import 'package:fparted/core/base.dart';
 import 'package:fparted/layouts/components/disk_plot.dart';
+import 'package:fparted/layouts/dialogs/partition/area.dart';
 import 'package:two_dimensional_scrollables/two_dimensional_scrollables.dart';
 
 class PartitionTile extends StatefulWidget {
@@ -55,7 +57,8 @@ class _PartitionTileState extends State<PartitionTile> {
 
 class PartitionList extends StatefulWidget {
   final Disk disk;
-  const PartitionList(this.disk, {super.key});
+  final VoidCallback stateUpdater;
+  const PartitionList(this.disk, {super.key, required this.stateUpdater});
 
   @override
   State<PartitionList> createState() => _PartitionListState();
@@ -63,6 +66,7 @@ class PartitionList extends StatefulWidget {
 
 class _PartitionListState extends State<PartitionList> {
   late final DiskPlot disk;
+
   @override
   void initState() {
     disk = DiskPlot.fromDisk(widget.disk);
@@ -117,57 +121,54 @@ class _PartitionListState extends State<PartitionList> {
       ),
 
       ...disk.areas.map((part) {
+        wrapper({required Widget child}) => Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: InkWell(
+            onTap: () {
+              showPartitionOptions(
+                context,
+                part,
+              ).then((_) => widget.stateUpdater());
+            },
+            borderRadius: BorderRadius.circular(8),
+            child: child,
+          ),
+        );
         if (part is PartitionPlot) {
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4),
-            child: InkWell(
-              onTap: () {},
-              borderRadius: BorderRadius.circular(8),
-              child: PartitionTile(
-                device: part.device.split('/').last,
-                fileSystem: Text(part.fileSystem.type.name),
-                size: part.size.humanReadable(),
-                used: part.fileSystem.space?.used.humanReadable() ?? "---",
-                free: part.fileSystem.space?.free.humanReadable() ?? "---",
-                name: part.name ?? "",
-                fsName: part.fileSystem.name,
-                flags: part.flags.join(', '),
-                mountpoints: "",
-              ),
+          return wrapper(
+            child: PartitionTile(
+              device: part.device.split('/').last,
+              fileSystem: Text(part.fileSystem.type.name),
+              size: part.size.humanReadable(),
+              used: part.fileSystem.space?.used.humanReadable() ?? "---",
+              free: part.fileSystem.space?.free.humanReadable() ?? "---",
+              name: part.name ?? "",
+              fsName: part.fileSystem.name,
+              flags: part.flags.join(', '),
+              mountpoints: "",
             ),
           );
         } else {
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4),
-            child: InkWell(
-              onTap: () {},
-              borderRadius: BorderRadius.circular(8),
-              child: PartitionTile(
-                device: "Free space",
-                fileSystem: Text(""),
-                size: part.size.humanReadable(),
-                used: "",
-                free: "",
-                name: "",
-                fsName: "",
-                flags: "",
-                mountpoints: "",
-              ),
+          return wrapper(
+            child: PartitionTile(
+              device: "Free space",
+              fileSystem: Text(""),
+              size: part.size.humanReadable(),
+              used: "",
+              free: "",
+              name: "",
+              fsName: "",
+              flags: "",
+              mountpoints: "",
             ),
           );
         }
       }),
     ];
     return TableView.builder(
-      columnBuilder: (_) {
-        return TableSpan(extent: FixedSpanExtent(1182));
-      },
-      rowBuilder: (_) {
-        return TableSpan(extent: FixedSpanExtent(40));
-      },
-      cellBuilder: (context, vincinity) {
-        return TableViewCell(child: tableData[vincinity.row]);
-      },
+      columnBuilder: (_) => TableSpan(extent: FixedSpanExtent(1182)),
+      rowBuilder: (_) => TableSpan(extent: FixedSpanExtent(40)),
+      cellBuilder: (_, vinc) => TableViewCell(child: tableData[vinc.row]),
       rowCount: tableData.length,
       columnCount: 1,
       pinnedRowCount: 1,

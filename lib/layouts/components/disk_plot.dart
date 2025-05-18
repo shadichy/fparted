@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:fparted/core/base.dart';
 import 'package:fparted/core/filesystem/fs.dart';
 import 'package:fparted/core/model/data_size.dart';
+import 'package:fparted/core/model/device.dart';
 import 'package:fparted/core/runner/parted/classes.dart';
 import 'package:fparted/layouts/components/material/flex.dart';
 
@@ -34,10 +35,11 @@ Color? fsColorMap(FileSystem fs) => switch (fs) {
 };
 
 class AreaPlot {
+  final Device disk;
   final DataSize start;
   final DataSize end;
 
-  const AreaPlot({required this.start, required this.end});
+  const AreaPlot({required this.disk, required this.start, required this.end});
 
   DataSize get size => end - start;
 
@@ -46,6 +48,7 @@ class AreaPlot {
     required FileSystemData fileSystem,
     required List<String> flags,
   }) => PartitionPlot(
+    disk: disk,
     start: start,
     end: end,
     device: "New partition",
@@ -61,6 +64,7 @@ class PartitionPlot extends AreaPlot {
   final List<String> flags;
 
   const PartitionPlot({
+    required super.disk,
     required super.start,
     required super.end,
     required this.device,
@@ -70,6 +74,7 @@ class PartitionPlot extends AreaPlot {
   });
 
   factory PartitionPlot.fromPartition(Partition partition) => PartitionPlot(
+    disk: partition.diskDevice,
     start: partition.start,
     end: partition.end,
     device: partition.device.raw,
@@ -91,7 +96,7 @@ class DiskPlot {
     final partitions = disk.partitions;
     if (partitions.isEmpty) {
       return DiskPlot(
-        areas: [AreaPlot(start: one, end: disk.size)],
+        areas: [AreaPlot(disk: disk.device, start: one, end: disk.size)],
         size: disk.size,
       );
     }
@@ -99,13 +104,25 @@ class DiskPlot {
     final areas = partitions.fold(<AreaPlot>[], (p, n) {
       final startSector = p.isEmpty ? DataSize.zero : p.last.end;
       if (n.start > startSector + oneMiB) {
-        p.add(AreaPlot(start: startSector + one, end: n.start - one));
+        p.add(
+          AreaPlot(
+            disk: disk.device,
+            start: startSector + one,
+            end: n.start - one,
+          ),
+        );
       }
       p.add(PartitionPlot.fromPartition(n));
       return p;
     });
     if (areas.last.end < disk.size - oneMiB) {
-      areas.add(AreaPlot(start: areas.last.end + one, end: disk.size));
+      areas.add(
+        AreaPlot(
+          disk: disk.device,
+          start: areas.last.end + one,
+          end: disk.size,
+        ),
+      );
     }
     return DiskPlot(areas: areas, size: disk.size);
   }

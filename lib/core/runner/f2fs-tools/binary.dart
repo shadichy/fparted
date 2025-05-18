@@ -16,32 +16,32 @@ class F2fstoolsBinary extends FilesystemPackage {
   ];
 
   @override
-  create(device, [_, label]) => Job(
-    "make_f2fs",
-    [
-      ...(label != null ? ["-l", label] : []),
-      device.raw,
-    ],
-  );
+  create(device, [_, label]) => Job("make_f2fs", [
+    ...(label != null ? ["-l", label] : []),
+    device.raw,
+  ], "Create F2FS on $device");
 
   @override
-  dump(device, [_]) => Job(
-    binaryMap["dump.f2fs"] ?? "dump.f2fs",
-    ["-d1", device.raw],
-  );
+  dump(device, [_]) => Job(binaryMap["dump.f2fs"] ?? "dump.f2fs", [
+    "-d1",
+    device.raw,
+  ], "Dump info of $device");
 
   @override
-  label(device, label, [_]) => Job(
-    binaryMap["f2fslabel"] ?? "f2fslabel",
-    [device.raw, label],
-  );
+  label(device, label, [_]) => Job(binaryMap["f2fslabel"] ?? "f2fslabel", [
+    device.raw,
+    label,
+  ], "Assign $device with label '$label'");
 
   @override
-  repair(device, [_]) => Job(binaryMap["fsck.f2fs"] ?? "fsck.f2fs", [device.raw]);
+  repair(device, [_]) => Job(binaryMap["fsck.f2fs"] ?? "fsck.f2fs", [
+    device.raw,
+  ], "Perform filesystem check on $device");
 
   @override
   resize(device, _, [_, _]) => Job(
     binaryMap["resize.f2fs"] ?? "resize.f2fs",
     [device.raw],
+    "Resize $device to fill the partition space",
   );
 }

@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:fparted/core/runner/base.dart';
 import 'package:fparted/core/runner/job.dart';
 
-class SuBinary implements RequiredPackage {
+class SuBinary implements RequiredBasePackage {
   SuBinary._i();
   static final SuBinary _ = SuBinary._i();
   factory SuBinary() => _;
@@ -32,12 +32,12 @@ class SuBinary implements RequiredPackage {
   }
 
   @override
-  toJob(List<String> arguments) {
+  toJob(List<String> arguments, [label = ""]) {
     final args = argToArg(arguments);
     if (Platform.isAndroid) {
       return Job(suBinary, ["-c", args]);
     } else if (Platform.isLinux) {
-      return Job("pkexec", ["su", "-c", args]);
+      return Job("pkexec", ["su", "-c", args], label);
     } else {
       throw Exception("Unsupported platform");
     }

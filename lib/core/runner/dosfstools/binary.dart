@@ -12,28 +12,34 @@ class DosfstoolsBinary extends FilesystemPackage<DosFSVariants> {
   get binaries => ["fatlabel", "fsck.fat", "mkfs.fat"];
 
   @override
-  create(device, [variant, label]) => Job(
-    "mkfs.fat",
-    [
-      "-F",
-      switch (variant) {
-        DosFSVariants.fat12 => "12",
-        DosFSVariants.fat16 => "16",
-        _ => "32",
-      },
-      ...(label != null ? ["-n", label] : []),
-      device.raw,
-    ],
-  );
+  create(device, [variant = DosFSVariants.fat32, label]) => Job("mkfs.fat", [
+    "-F",
+    switch (variant) {
+      DosFSVariants.fat12 => "12",
+      DosFSVariants.fat16 => "16",
+      _ => "32",
+    },
+    ...(label != null ? ["-n", label] : []),
+    device.raw,
+  ], "Create ${variant?.name} on $device");
 
   @override
-  dump(device, [_]) => Job(binaryMap["fsck.fat"] ?? "fsck.fat", ["-n", device.raw]);
+  dump(device, [_]) => Job(binaryMap["fsck.fat"] ?? "fsck.fat", [
+    "-n",
+    device.raw,
+  ], "Dump info of $device");
 
   @override
-  label(device, label, [_]) => Job(binaryMap["fatlabel"] ?? "fatlabel", [device.raw, label]);
+  label(device, label, [_]) => Job(binaryMap["fatlabel"] ?? "fatlabel", [
+    device.raw,
+    label,
+  ], "Assign $device with label '$label'");
 
   @override
-  repair(device, [_]) => Job(binaryMap["fsck.fat"] ?? "fsck.fat", ["-a", device.raw]);
+  repair(device, [_]) => Job(binaryMap["fsck.fat"] ?? "fsck.fat", [
+    "-a",
+    device.raw,
+  ], "Perform filesystem check on $device");
 
   @override
   // dosfstools has no ability to resize

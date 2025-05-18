@@ -18,26 +18,31 @@ class E2fsprogsBinary extends FilesystemPackage<E2FSVariants> {
   ];
 
   @override
-  create(device, [variant = E2FSVariants.ext4, label]) => Job(
-    "mkfs.${variant?.name}",
-    [
-      ...(label != null ? ["-L", label] : []),
-      device.raw,
-    ],
-  );
+  create(device, [variant = E2FSVariants.ext4, label]) =>
+      Job("mkfs.${variant?.name}", [
+        ...(label != null ? ["-L", label] : []),
+        device.raw,
+      ], "Create ${variant?.name} on $device");
 
   @override
-  dump(device, [_]) => Job(binaryMap["dumpe2fs"] ?? "dumpe2fs", [device.raw]);
+  dump(device, [_]) => Job(binaryMap["dumpe2fs"] ?? "dumpe2fs", [
+    device.raw,
+  ], "Dump info of $device");
 
   @override
-  label(device, label, [_]) => Job(binaryMap["e2label"] ?? "e2label", [device.raw, label]);
+  label(device, label, [_]) => Job(binaryMap["e2label"] ?? "e2label", [
+    device.raw,
+    label,
+  ], "Assign $device with label '$label'");
 
   @override
-  repair(device, [_]) => Job(binaryMap["e2fsck"] ?? "e2fsck", [device.raw]);
+  repair(device, [_]) => Job(binaryMap["e2fsck"] ?? "e2fsck", [
+    device.raw,
+  ], "Perform filesystem check on $device");
 
   @override
-  resize(device, size, [_, _]) => Job(
-    "resize2fs",
-    [device.raw, "${size.inKiB.toStringAsFixed(0)}K"],
-  );
+  resize(device, size, [_, _]) => Job("resize2fs", [
+    device.raw,
+    "${size.inKiB.toStringAsFixed(0)}K",
+  ], "Resize $device to ${size.humanReadable()}");
 }

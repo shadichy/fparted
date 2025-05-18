@@ -62,6 +62,12 @@ class Device {
 
   @override
   String toString() => raw;
+
+  @override
+  bool operator ==(Object other) => other is Device && other.raw == raw;
+
+  @override
+  int get hashCode => raw.hashCode;
 }
 
 Future<void> deviceInit() async => await _DeviceInit().init();
@@ -78,7 +84,8 @@ class _DeviceInit {
   Future<void> init() async {
     // read from Hive config
     if (Platform.isAndroid) {
-      fallback = Device.tryParse("/dev/block/zram0") ?? Device("/dev/block/ram0");
+      fallback =
+          Device.tryParse("/dev/block/zram0") ?? Device("/dev/block/ram0");
     } else if (Platform.isLinux) {
       fallback = Device("/dev/zram0");
     } else {
@@ -105,7 +112,9 @@ class DeviceId {
     }
   }
 
-  DeviceId.fromInt(int value) : _type = _DeviceIdType.ID, id = BigInt.from(value);
+  DeviceId.fromInt(int value)
+    : _type = _DeviceIdType.ID,
+      id = BigInt.from(value);
 
   DeviceId.fromBigInt(this.id) : _type = _DeviceIdType.UUID;
 

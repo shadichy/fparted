@@ -3,7 +3,8 @@
         android:label="fparted"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
-				android:extractNativeLibs="true">
+        android:extractNativeLibs="true"
+        android:requestLegacyExternalStorage="false">
         <activity
             android:name=".MainActivity"
             android:exported="true"

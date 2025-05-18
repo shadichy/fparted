@@ -37,8 +37,12 @@ abstract interface class Package {
   Future<void> init();
 }
 
+abstract class RequiredBasePackage implements Package {
+  Job toJob(List<String> arguments, [String label = ""]);
+}
+
 abstract class RequiredPackage implements Package {
-  Job toJob(List<String> arguments);
+  Job toJob(DeviceJob arguments);
 }
 
 abstract class FilesystemPackage<T extends Enum> implements Package {

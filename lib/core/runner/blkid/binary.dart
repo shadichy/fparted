@@ -33,11 +33,11 @@ class BlkidBinary implements RequiredPackage {
   }
 
   @override
-  Job toJob(List<String> arguments) {
-    final args = [arguments[0], argToArg(arguments.skip(1))];
+  toJob(job) {
+    final args = [job.device.raw, argToArg(job.arguments)];
     return switch (_mode) {
-      _BlkidMode.blkid => Job(blkidBinary, args),
-      _BlkidMode.toybox => Job(blkidBinary, ["blkid", ...args]),
+      _BlkidMode.blkid => Job(blkidBinary, args, job.label),
+      _BlkidMode.toybox => Job(blkidBinary, ["blkid", ...args], job.label),
     };
   }
 }

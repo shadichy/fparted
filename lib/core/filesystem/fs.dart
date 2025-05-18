@@ -76,7 +76,7 @@ abstract class FileSystemData implements Serializable {
     DeviceId? id;
     DataSize? blockSize;
     for (final str in Wrapper.runBlkidSync(
-      PartedJob(partition, []),
+      DeviceJob(partition, []),
     ).stdout.toString().split(" ")) {
       if (str.startsWith("UUID=")) {
         id = DeviceId.fromString(extractVar(str).$2);
@@ -221,4 +221,37 @@ enum FileSystem {
   squashfs,
   erofs,
   none,
+}
+
+extension FileSystemAvailability on FileSystem {
+  bool get available => switch (this) {
+    FileSystem.btrfs => BtrfsprogsBinary().isAvailable,
+    FileSystem.ext2 => E2fsprogsBinary().isAvailable,
+    FileSystem.ext3 => E2fsprogsBinary().isAvailable,
+    FileSystem.ext4 => E2fsprogsBinary().isAvailable,
+    FileSystem.f2fs => F2fstoolsBinary().isAvailable,
+    FileSystem.exfat => ExfatprogsBinary().isAvailable,
+    FileSystem.fat12 => DosfstoolsBinary().isAvailable,
+    FileSystem.fat16 => DosfstoolsBinary().isAvailable,
+    FileSystem.fat32 => DosfstoolsBinary().isAvailable,
+    FileSystem.none => true,
+    _ => false,
+  };
+
+  static List<FileSystem> get availableTypes {
+    return FileSystem.values.where((f) => f.available).toList();
+  }
+
+  FilesystemPackage get toolchain => switch (this) {
+    FileSystem.btrfs => BtrfsprogsBinary(),
+    FileSystem.ext2 => E2fsprogsBinary(),
+    FileSystem.ext3 => E2fsprogsBinary(),
+    FileSystem.ext4 => E2fsprogsBinary(),
+    FileSystem.f2fs => F2fstoolsBinary(),
+    FileSystem.exfat => ExfatprogsBinary(),
+    FileSystem.fat12 => DosfstoolsBinary(),
+    FileSystem.fat16 => DosfstoolsBinary(),
+    FileSystem.fat32 => DosfstoolsBinary(),
+    _ => throw Exception("Toolchain for '$name' is not available"),
+  };
 }

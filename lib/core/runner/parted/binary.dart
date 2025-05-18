@@ -23,12 +23,13 @@ class PartedBinary implements RequiredPackage {
   }
 
   @override
-  Job toJob(List<String> arguments) => Job(partedBinary, [
-    arguments[0],
+  toJob(job) => Job(partedBinary, [
+    job.device.raw,
     "-j",
     "-s",
     "unit",
     "b",
-    argToArg(arguments.skip(1)),
+    argToArg(job.arguments),
+    job.label
   ]);
 }

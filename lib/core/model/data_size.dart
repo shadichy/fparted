@@ -1,4 +1,6 @@
-class DataSize {
+enum Unit { B, kiB, miB, giB, tiB, piB, eiB, kB, mB, gB, tB, pB, eB }
+
+final class DataSize {
   final int byte;
   static final ratio = 1024;
   static final ratioSI = 1000;
@@ -21,10 +23,29 @@ class DataSize {
   factory DataSize.tB(BigInt tb) => DataSize.gB(tb * BigInt.from(ratioSI));
   factory DataSize.pB(BigInt pb) => DataSize.tB(pb * BigInt.from(ratioSI));
   factory DataSize.eB(BigInt eb) => DataSize.pB(eb * BigInt.from(ratioSI));
+
   factory DataSize.fromBlock(BigInt blockCount, DataSize blockSize) =>
       DataSize(blockCount * blockSize.inB);
+
   factory DataSize.parse(String source, {int? radix}) =>
-      DataSize(BigInt.parse(source));
+      DataSize(BigInt.parse(source, radix: radix));
+
+  factory DataSize.unit(BigInt size, Unit unit) => switch (unit) {
+    Unit.B => DataSize.B,
+    Unit.kiB => DataSize.kiB,
+    Unit.miB => DataSize.miB,
+    Unit.giB => DataSize.giB,
+    Unit.tiB => DataSize.tiB,
+    Unit.piB => DataSize.piB,
+    Unit.eiB => DataSize.eiB,
+    Unit.kB => DataSize.kB,
+    Unit.mB => DataSize.mB,
+    Unit.gB => DataSize.gB,
+    Unit.tB => DataSize.tB,
+    Unit.pB => DataSize.pB,
+    Unit.eB => DataSize.eB,
+  }(size);
+
   factory DataSize.fromString(String string) {
     final String lowerCase = string.toLowerCase();
     if (lowerCase.endsWith("ib")) {
@@ -84,6 +105,22 @@ class DataSize {
   double get inZiB => inEiB / ratio;
   double get inYiB => inZiB / ratio;
 
+  double inUnit(Unit unit) => switch (unit) {
+    Unit.B => throw UnsupportedError("Please use `inB` instead of `inUnit(Unit.B)`"),
+    Unit.kiB => inKiB,
+    Unit.miB => inMiB,
+    Unit.giB => inGiB,
+    Unit.tiB => inTiB,
+    Unit.piB => inPiB,
+    Unit.eiB => inEiB,
+    Unit.kB => inKB,
+    Unit.mB => inMB,
+    Unit.gB => inGB,
+    Unit.tB => inTB,
+    Unit.pB => inPB,
+    Unit.eB => inEB,
+  };
+
   (double, String) _inKiB() => (inKiB, "KiB");
   (double, String) _inMiB() => (inMiB, "MiB");
   (double, String) _inGiB() => (inGiB, "GiB");
@@ -96,8 +133,8 @@ class DataSize {
   DataSize operator +(DataSize other) => DataSize(inB + other.inB);
   DataSize operator -(DataSize other) => DataSize(inB - other.inB);
 
-  // DataSize operator *(double scalar) => DataSize(BigInt.from(byte) * scalar);
-  // DataSize operator /(double scalar) => DataSize(BigInt.from(byte) / scalar);
+  // DataSize operator *(int scalar) => DataSize(BigInt.from(byte) * BigInt.from(scalar));
+  // DataSize operator /(int scalar) => DataSize(BigInt.from(byte) / scalar);
 
   @override
   bool operator ==(Object other) => other is DataSize && byte == other.byte;
@@ -128,6 +165,25 @@ class DataSize {
       final value = func();
       if (value.$1 <= 1) break;
       result = "${value.$1.toStringAsFixed(2)}${value.$2}";
+    }
+    return result;
+  }
+
+  String ddReadable() {
+    var result = toString();
+    for (final func in [
+      _inKiB,
+      _inMiB,
+      _inGiB,
+      _inTiB,
+      _inPiB,
+      _inEiB,
+      _inZiB,
+      _inYiB,
+    ]) {
+      final value = func();
+      if (value.$1 <= 1) break;
+      result = "${value.$1.toStringAsFixed(2)}${value.$2[0]}";
     }
     return result;
   }

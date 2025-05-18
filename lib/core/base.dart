@@ -39,11 +39,12 @@ final class Disk implements Serializable {
     required DataSize end,
     PartitionType type = PartitionType.PRIMARY,
     String? partitionLabel,
-    FileSystem? fileSystem,
+    FileSystem fileSystem = FileSystem.none,
     String? fileSystemLabel,
   }) {
     // parted.createPart(start, end, type);
     // TODO:
+    return [Job("create", [fileSystem.name])];
     throw UnimplementedError();
   }
 
@@ -68,7 +69,7 @@ final class Disk implements Serializable {
   }
 
   static Future<List<Disk>> get all async =>
-      (await Wrapper.runParted(Parted.list.first)).stdout
+      (await Wrapper.runJob(Parted.list.first)).stdout
           .toString()
           .split("\n\n")
           .where((d) => d.trim().isNotEmpty)
@@ -132,12 +133,14 @@ class OrphanPartion implements Serializable {
     required this.fileSystem,
   });
 
-  Future<FileSystemData> format(FileSystem fs, {String? label}) async {
+  List<Job> format(FileSystem fs, {String? label}) {
+    return [Job("format", [fs.name])];
     throw UnimplementedError();
   }
 
-  Future<void> edit({String? name, String? fsName}) async {
+  List<Job> edit({String? name, FileSystem fs = FileSystem.none, String? fsName}) {
     // TODO:
+    return [Job("edit", [device.raw])];
     throw UnimplementedError();
   }
 
@@ -209,18 +212,21 @@ class Partition extends OrphanPartion {
   PartedPartitionOperation get parted => PartedPartitionOperation.from(this);
 
   @override
-  Future<void> edit({
+  List<Job> edit({
     String? name,
     DataSize? start,
     DataSize? end,
     DeviceId? typeId,
     List<PartitionFlag> flags = const [],
+    FileSystem fs = FileSystem.none,
     String? fsName,
-  }) async {
+  }) {
+    return [Job("edit", [device.raw])];
     throw UnimplementedError();
   }
 
-  Future<void> delete() async {
+  List<Job> delete() {
+    return [Job("delete", [device.raw])];
     // You cannot delete Orphaned partitions (loop devices)
     throw UnimplementedError();
   }
